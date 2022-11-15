@@ -48,7 +48,7 @@ module hci
   input   wire  [ 7:0]                io_din,           // I/O data input bus
   output  wire  [ 7:0]                io_dout,          // I/O data output bus
   input   wire                        io_wr,            // I/O write/read select
-  output  wire                        io_full,          // I/O buffer full signal 
+  output  wire                        io_full,          // I/O buffer full signal
 
   output  reg                         program_finish,   // program finish signal
 
