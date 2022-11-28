@@ -6,11 +6,15 @@
 // constants for ram
 `define ADDR_WIDTH 6
 `define DATA_WIDTH 8
-`define READ_SIT 0
-`define WRITE_SIT 1
+`define READ_SIT 1
+`define WRITE_SIT 0
+`define INST_CNT_TYPE 7:0
+`define INST_CNT_NUM 8
 
 // constants for fetcher
-`define IQUEUE_SIZE 8
+`define ICACHE_SIZE 512
+`define ICACHE_TYPE 12:0
+`define IQUEUE_SIZE_ 8 // rz 插件貌似不支持某些名称
 
 // constant of types
 `define INT_TYPE 31:0
