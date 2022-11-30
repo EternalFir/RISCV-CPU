@@ -25,7 +25,16 @@
 
 // constants of register
 `define REG_TYPE 4:0
+`define REG_SIZE 32
 `define REG_RESET 5'd0
+
+// constants of reservation_station
+`define RS_TYPE 4:0
+`define RS_SIZE 32
+
+// constants of reorder_buffer
+`define ROB_SIZE 64
+`define ROB_TYPE 5:0
 
 // constants of reset
 `define MEMPORT_RESET 8'h0

@@ -6,3 +6,5 @@ riscv/testspace/*
 !.keep
 
 .idea
+
+./riscv/src/*.out

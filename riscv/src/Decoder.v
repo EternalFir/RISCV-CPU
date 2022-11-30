@@ -1,8 +1,9 @@
 `include "constants.v"
 
-module Decode(
+module Decoder(
     input wire[`INST_TYPE ] inst_in,
 
+    // connect with dispatcher
     output reg[`OP_ENUM_TYPE ] op_enum,
     output reg[`REG_TYPE ] rd,
     output reg[`REG_TYPE ] rs1,
