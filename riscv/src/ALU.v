@@ -8,7 +8,7 @@ module ALU(
     input wire[`DATA_TYPE ] imm,
     input wire[`ADDR_TYPE ] inst_pos,
 
-    output reg vailed,
+    output reg busy,
     output reg jump_flag,
     output reg[`DATA_TYPE ] result,
     output reg[`ADDR_TYPE ] target_pos
@@ -16,7 +16,7 @@ module ALU(
 );
 
     always @(*) begin
-        vailed = (op_enum != `OP_ENUM_RESET);
+        busy = (op_enum != `OP_ENUM_RESET);
         result = `DATA_RESET;
         jump_flag = `FALSE;
         target_pos = `ADDR_RESET;

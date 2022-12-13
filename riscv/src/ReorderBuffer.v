@@ -36,4 +36,4 @@ module ReorderBuffer(
 
 );
 
-endmodule : ReorderBuffer
+endmodule

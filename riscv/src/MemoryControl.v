@@ -58,14 +58,15 @@ module MemoryControl(
             one_inst_finish_to_fetcher <= `FALSE;
         end
         else if (rdy_in) begin
-            end_to_fetcher <= `FALSE;
-            end_to_lsu <= `FALSE;
+            end_to_fetcher <= `TRUE ;
+            end_to_lsu <= `TRUE ;
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
             if (enable_from_lsu == `TRUE) begin // 存在 icache，故 memory 带宽应该优先保证 lsu 使用
                 if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
                     rw_end_ram <= `FALSE;
                     rw_block_ram <= 0;
+                    address_to_ram<=address_from_lsu;
                 end
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
                     read_write_flag_to_ram <= `READ_SIT;

@@ -1,4 +1,4 @@
-`include "constants.sv"
+`include "constants.v"
 module Fetcher(
     input wire clk_in,
     input wire rst_in,

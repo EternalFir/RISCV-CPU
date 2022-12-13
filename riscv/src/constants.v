@@ -1,6 +1,7 @@
 // constant for all
 `define TRUE 1'b1
 `define FALSE 1'b0
+`define FULL_PRESERVE 2
 
 // constants of ram
 `define ADDR_WIDTH 6
@@ -30,11 +31,18 @@
 
 // constants of reservation_station
 `define RS_TYPE 4:0
-`define RS_SIZE 32
+`define RS_SIZE 16
+`define RS_OUT_OF_RANGE 5'h10
+
+// constants of load_store_buffer
+`define LSB_TYPE 4:0
+`define LSB_SIZE 16
+`define LSB_OUT_OF_RANGE 5'h10
 
 // constants of reorder_buffer
-`define ROB_SIZE 64
-`define ROB_TYPE 5:0
+`define ROB_SIZE 16
+`define ROB_TYPE 4:0
+`define ROB_RESET 5'h0
 
 // constants of reset
 `define MEMPORT_RESET 8'h0
