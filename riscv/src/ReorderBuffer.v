@@ -16,10 +16,9 @@ module ReorderBuffer(
     // about inst add
     input wire enable_from_dispatcher,
     input wire is_load_flag_from_dispatcher,
-    input wire is_store_from_dispatcher,
     input wire is_jump_flag_from_dispatcher,
-    input wire[`REG_TYPE ] rd_from_dispatcher,
-    input wire if_predicted_jumped_from_dispatcher,
+    // input wire[`REG_TYPE ] rd_from_dispatcher,
+    input wire if_jump_predicted_from_dispatcher,
     input wire[`ADDR_TYPE ] inst_pos_from_dispatcher,
     input wire[`ADDR_TYPE ] rollback_pos_from_dispatcher,
     output wire[`ROB_TYPE ] rob_id_to_dispatcher,

@@ -26,7 +26,13 @@ module Fetcher(
     input wire enable_from_dispatcher,
     output reg end_to_dispatcher,
     output reg[`INST_TYPE ] inst_to_dispatcher,
+    output reg[`ADDR_TYPE ] inst_pos_to_dispatcher,
+    output reg if_jump_flag_predicted_to_dispatcher,
+    output reg[`ADDR_TYPE ] roll_back_pos_to_dispatcher, // pc pos if do not jump
 
+    // connect with reorder buffer
+    input wire rollback_flag_from_rob,
+    input wire[`ADDR_TYPE ] targer_pc_pos_from_rob
 );
     reg[`ADDR_TYPE ] pc_pos_now;
     // reg[`ADDR_TYPE ] pc_pos_next;
@@ -37,6 +43,7 @@ module Fetcher(
     reg[`INST_CNT_TYPE ] icache_get_cnt;
     reg[`INST_TYPE ] inst_queue[`IQUEUE_SIZE_-1:0];
     reg[`ADDR_TYPE ] inst_pos_queue[`IQUEUE_SIZE_-1:0];
+    reg inst_jump_predict_queue[`IQUEUE_SIZE_ -1:0];
     reg[3:0] inst_quque_num;
     // reg[`INST_QUEUE_TYPE ] inst_read_num;
     reg end_inst_read;
@@ -84,6 +91,7 @@ module Fetcher(
             for (i = 0; i < `IQUEUE_SIZE_;i = i+1) begin
                 inst_queue[i] <= `INST_RESET;
                 inst_pos_queue[i] <= `ADDR_RESET;
+                inst_jump_predict_queue[i] <= `FALSE;
             end
             busy_with_memcont <= `FALSE;
             busy_with_dispatcher <= `FALSE;
@@ -139,7 +147,10 @@ module Fetcher(
                     // jump_predict
                     if (jump_predict_flag_from_predictor) begin
                         pc_pos_now <= pc_pos_now+imm_from_predictor;
+                        if_jump_flag_predicted_to_dispatcher <= `TRUE;
+                        roll_back_pos_to_dispatcher <= pc_pos_now+32;
                     end else begin
+                        if_jump_flag_predicted_to_dispatcher <= `FALSE;
                         pc_pos_now <= pc_pos_now+32;
                     end
                 end else begin // miss

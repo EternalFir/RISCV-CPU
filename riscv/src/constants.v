@@ -10,6 +10,7 @@
 `define WRITE_SIT 0
 `define INST_CNT_TYPE 7:0
 `define INST_CNT_NUM 8
+`define RAM_IO_PORT 32'h30000
 
 // constants of fetcher
 `define ICACHE_SIZE 512
@@ -37,7 +38,8 @@
 // constants of load_store_buffer
 `define LSB_TYPE 4:0
 `define LSB_SIZE 16
-`define LSB_OUT_OF_RANGE 5'h10
+`define LSB_OUT_OF_RANGE_ 5'h10
+`define LSB_RESET_ 5'h0
 
 // constants of reorder_buffer
 `define ROB_SIZE 16
