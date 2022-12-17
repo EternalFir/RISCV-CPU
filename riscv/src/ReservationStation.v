@@ -30,10 +30,10 @@ module ReservationStation(
 
     // info from cdb broadcast
     input wire enable_from_alu,
-    input wire[`ROB_TYPE ] rob_id_from_alu,
+    input wire[`ROB_TYPE ] rob_id_from_rs,
     input wire[`DATA_TYPE ] result_from_alu,
     input wire enable_from_lsu,
-    input wire[`ROB_TYPE ] rob_id_from_lsu,
+    input wire[`ROB_TYPE ] rob_id_from_lsb,
     input wire[`DATA_TYPE ] data_from_lsu,
 
 
@@ -57,10 +57,10 @@ module ReservationStation(
     wire[`RS_TYPE ] exec_now;
     wire is_full = (aviliable_now == `RS_OUT_OF_RANGE);
 
-    wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ?`ROB_RESET :Q1_from_dispatcher);
-    wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ?`ROB_RESET :Q2_from_dispatcher);
-    wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? result_from_alu:((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? data_from_lsu:V1_from_dispatcher);
-    wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? result_from_alu:((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ? data_from_lsu:V2_from_dispatcher);
+    wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q1_from_dispatcher);
+    wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q2_from_dispatcher);
+    wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ? data_from_lsu:V1_from_dispatcher);
+    wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ? data_from_lsu:V2_from_dispatcher);
 
     assign aviliable_now = ~busy[0] ? 0 :
         (~busy[1] ? 1 :
@@ -143,11 +143,11 @@ module ReservationStation(
             end
             if (enable_from_alu) begin // data from alu
                 for (i = 0; i < `RS_SIZE;i = i+1) begin
-                    if (Q1[i] == rob_id_from_alu) begin
+                    if (Q1[i] == rob_id_from_rs) begin
                         V1[i] <= result_from_alu;
                         Q1[i] <= `ROB_RESET;
                     end
-                    if (Q2[i] == rob_id_from_alu) begin
+                    if (Q2[i] == rob_id_from_rs) begin
                         V2[i] <= result_from_alu;
                         Q2[i] <= `ROB_RESET;
                     end
@@ -155,11 +155,11 @@ module ReservationStation(
             end
             if (enable_from_lsu) begin // data from lsu
                 for (i = 0; i < `RS_SIZE;i = i+1) begin
-                    if (Q1[i] == rob_id_from_lsu) begin
+                    if (Q1[i] == rob_id_from_lsb) begin
                         V1[i] <= data_from_lsu;
                         V1[i] <= `ROB_RESET;
                     end
-                    if (Q2[i] == rob_id_from_lsu) begin
+                    if (Q2[i] == rob_id_from_lsb) begin
                         V2[i] <= data_from_lsu;
                         Q2[i] <= `ROB_RESET;
                     end

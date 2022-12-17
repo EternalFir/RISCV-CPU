@@ -29,10 +29,10 @@ module LoadStoreBuffer(
 
     // info from cdb broadcast
     input wire enable_from_alu,
-    input wire[`ROB_TYPE ] rob_id_from_alu,
+    input wire[`ROB_TYPE ] rob_id_from_rs,
     input wire[`DATA_TYPE ] result_from_alu,
     input wire enable_from_lsu,
-    input wire[`ROB_TYPE ] rob_id_from_lsu,
+    input wire[`ROB_TYPE ] rob_id_from_lsb,
     input wire[`DATA_TYPE ] result_from_lsu,
     output reg[`ROB_TYPE ] rob_id_to_cdb,
 
@@ -40,6 +40,7 @@ module LoadStoreBuffer(
     input wire commit_flag_from_rob,
     input wire[`ROB_TYPE ] rob_id_from_rob,
     input wire[`ROB_TYPE ] head_io_rob_id_from_rob,
+    output wire[`ROB_TYPE ] io_rob_id_to_rob,
     input wire roll_back_flag_from_rob
 
 );
@@ -57,15 +58,16 @@ module LoadStoreBuffer(
     reg[`LSB_TYPE ] head, tail, commit_tail;
     reg[`ROB_TYPE ] element_num;
     wire full = element_num >= (`LSB_SIZE -`FULL_PRESERVE);
-    wire[`ROB_TYPE ] insert_signal = enable_from_dispatcher;
-    wire[`ROB_TYPE ] issue_signal = busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]);
+    wire insert_signal = enable_from_dispatcher;
+    wire issue_signal = busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]);
 
-    wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ?`ROB_RESET :Q1_from_dispatcher);
-    wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ?`ROB_RESET :Q2_from_dispatcher);
-    wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_alu) ? result_from_alu:((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsu) ? result_from_lsu:V1_from_dispatcher);
-    wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_alu) ? result_from_alu:((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsu) ? result_from_lsu:V2_from_dispatcher);
+    wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q1_from_dispatcher);
+    wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q2_from_dispatcher);
+    wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ? result_from_lsu:V1_from_dispatcher);
+    wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ? result_from_lsu:V2_from_dispatcher);
 
     assign full_flag_to_dispatcher = full;
+    assign io_rob_id_to_rob = ((V1[head]+imm[head]) == `RAM_IO_PORT) ? rob_id[head]:`ROB_RESET;
 
     integer i;
 
@@ -157,11 +159,11 @@ module LoadStoreBuffer(
                 // update for new result
                 if (enable_from_alu) begin
                     for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                        if (Q1[i] == rob_id_from_alu) begin
+                        if (Q1[i] == rob_id_from_rs) begin
                             V1[i] <= result_from_alu;
                             Q1[i] <= `ROB_RESET;
                         end
-                        if (Q2[i] == rob_id_from_alu) begin
+                        if (Q2[i] == rob_id_from_rs) begin
                             V2[i] <= result_from_alu;
                             Q2[i] <= `ROB_RESET;
                         end
@@ -169,11 +171,11 @@ module LoadStoreBuffer(
                 end
                 if (enable_from_lsu) begin
                     for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                        if (Q1[i] == rob_id_from_lsu) begin
+                        if (Q1[i] == rob_id_from_lsb) begin
                             V1[i] <= result_from_lsu;
                             Q1[i] <= `ROB_RESET;
                         end
-                        if (Q2[i] == rob_id_from_lsu) begin
+                        if (Q2[i] == rob_id_from_lsb) begin
                             V2[i] <= result_from_lsu;
                             Q2[i] <= `ROB_RESET;
                         end

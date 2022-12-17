@@ -42,7 +42,7 @@
 `define LSB_RESET_ 5'h0
 
 // constants of reorder_buffer
-`define ROB_SIZE 16
+`define ROB_SIZE 32
 `define ROB_TYPE 4:0
 `define ROB_RESET 5'h0
 
