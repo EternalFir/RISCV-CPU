@@ -26,7 +26,7 @@ module ReservationStation(
     input wire busy_from_alu,
 
     // boardcast to cdb
-    output reg rob_id_exec_now_to_cdb,
+    output reg [`ROB_TYPE ]rob_id_exec_now_to_cdb,
 
     // info from cdb broadcast
     input wire enable_from_alu,

@@ -18,7 +18,7 @@ module Predictor(
     // connect with ReorderBuffer
     input wire enable_from_reorderbuffer,
     input wire[`ADDR_TYPE ] inst_addr_from_reorderbuffer,
-    input wire jump_result_from_reorderbuffer,
+    input wire jump_result_from_reorderbuffer
     // output reg end_to_reorderbuffer,
 );
     integer i;

@@ -1,4 +1,4 @@
-`include "constants.sv"
+`include "constants.v"
 
 module MemoryControl(
     input wire clk_in,
@@ -28,7 +28,7 @@ module MemoryControl(
     input wire[`DATA_TYPE ] data_from_lsu,
     // input wire start_from_lsu,
     output reg end_to_lsu,
-    output reg[`DATA_TYPE ] data_to_lsu,
+    output reg[`DATA_TYPE ] data_to_lsu
 
 );
 

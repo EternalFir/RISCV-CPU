@@ -32,10 +32,10 @@ module Fetcher(
     output reg[`ADDR_TYPE ] rollback_pos_to_dispatcher, // pc pos if do not jump
 
     // connect with reorder buffer
-    input wire rollback_flag_from_rob,
     input wire[`ADDR_TYPE ] targer_pc_pos_from_rob,
 
     // info from cdb broadcast
+    input wire rollback_flag_from_rob,
     input wire full_flag_in
 );
     reg[`ADDR_TYPE ] pc_pos_now;

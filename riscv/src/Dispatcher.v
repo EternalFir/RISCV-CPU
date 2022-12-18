@@ -12,7 +12,7 @@ module Dispatcher(
     input wire[`INST_TYPE ] inst_from_fetcher,
     input wire[`ADDR_TYPE ] inst_pos_from_fetcher,
     input wire if_jump_flag_predicted_from_fetcher,
-    input wire[`ADDR_TYPE ] roll_back_pos_from_fetcher,
+    input wire[`ADDR_TYPE ] rollback_pos_from_fetcher,
     // output reg enable_to_fetcher,
 
     // connect with reorder buffer
@@ -32,7 +32,7 @@ module Dispatcher(
     output reg is_jump_to_rob,
     output reg if_jump_predicted_to_rob,
     output reg[`ADDR_TYPE ] inst_pos_to_rob,
-    output reg[`ADDR_TYPE ] roll_back_pos_to_rob,
+    output reg[`ADDR_TYPE ] rollback_pos_to_rob,
 
     // conenect with register
     // about data update
@@ -152,7 +152,7 @@ module Dispatcher(
             is_jump_to_rob <= is_jump_from_decoder;
             if_jump_predicted_to_rob <= if_jump_flag_predicted_from_fetcher;
             inst_pos_to_rob <= inst_from_fetcher;
-            roll_back_pos_to_rob <= roll_back_pos_from_fetcher;
+            rollback_pos_to_rob <= rollback_pos_from_fetcher;
             // register
             reg_id_to_register <= rd_from_decoder;
             // rs

@@ -27,7 +27,7 @@ module LSU(
     output reg[`DATA_TYPE ] result_to_cdb,
 
     // connect with reorder buffer
-    input wire roll_back_flag_from_rob
+    input wire rollback_flag_from_rob
 );
 
     assign busy_to_lsb = (enable_from_lsb || !end_to_lsb);
@@ -61,10 +61,10 @@ module LSU(
 
                     end
                         `OP_ENUM_SB: begin
-                        data_to_memcont <= {{24{data_from_lsb[7]}}, date_from_lsb[7:0]};
+                        data_to_memcont <= {{24{data_from_lsb[7]}}, data_from_lsb[7:0]};
                     end
                     `OP_ENUM_SH: begin
-                        data_to_memcont <= {{16{date_from_lsb[15]}}, data_from_lsb[15:0]};
+                        data_to_memcont <= {{16{data_from_lsb[15]}}, data_from_lsb[15:0]};
                     end
                     `OP_ENUM_SW: begin
                         data_to_memcont <= data_from_lsb;
@@ -91,14 +91,14 @@ module LSU(
                         result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
                     end
                     `OP_ENUM_LBU: begin
-                        data_to_lsb <= {{24{0}}, data_from_memcont[7:0]};
+                        data_to_lsb <= `DATA_RESET +{ data_from_memcont[7:0]};
                         enable_to_cdb <= `TRUE;
-                        result_to_cdb <= {{24{0}}, data_from_memcont[7:0]};
+                        result_to_cdb <= `DATA_RESET +{ data_from_memcont[7:0]};
                     end
                     `OP_ENUM_LHU: begin
-                        data_to_lsb <= {{16{0}}, data_from_memcont[15:0]};
+                        data_to_lsb <= `DATA_RESET +{ data_from_memcont[15:0]};
                         enable_to_cdb <= `TRUE;
-                        result_to_cdb <= {{16{0}}, data_from_memcont[15:0]};
+                        result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
                     end
                     `OP_ENUM_SB: begin
                         enable_to_cdb <= `FALSE;

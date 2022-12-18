@@ -2,12 +2,13 @@
 `define TRUE 1'b1
 `define FALSE 1'b0
 `define FULL_PRESERVE 2
+`define ZERO 0
 
 // constants of ram
 `define ADDR_WIDTH 6
 `define DATA_WIDTH 8
-`define READ_SIT 1
-`define WRITE_SIT 0
+`define READ_SIT 0
+`define WRITE_SIT 1
 `define INST_CNT_TYPE 7:0
 `define INST_CNT_NUM 8
 `define RAM_IO_PORT 32'h30000

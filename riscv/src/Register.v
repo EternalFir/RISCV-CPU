@@ -32,7 +32,7 @@ module Register(
     reg[`DATA_TYPE ] registers[`REG_SIZE -1:0];
     reg[`ROB_TYPE ] rob_register[`REG_SIZE -1:0];
 
-    reg roll_back_flag_from_cdb_backup, rob_free;
+    reg rollback_flag_from_cdb_backup, rob_free;
     reg[`ROB_TYPE ] rob_id_from_dispatcher_backup;
     reg[`REG_TYPE ] reg_id_from_dispatcher_backup;
     reg[`REG_TYPE ] rd_from_rob_backup;
@@ -40,16 +40,16 @@ module Register(
 
     assign V1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher) ? V_from_rob_backup:registers[rs1_from_dispatcher];
     assign V2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher) ? V_from_rob_backup:registers[rs2_from_dispatcher];
-    assign Q1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (roll_back_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs1_from_dispatcher]));
-    assign Q2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (roll_back_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs2_from_dispatcher]));
+    assign Q1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs1_from_dispatcher]));
+    assign Q2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs2_from_dispatcher]));
 
 
     always @(*) begin
         if (rollback_flag_from_cdb) begin
-            roll_back_flag_from_cdb_backup = rollback_flag_from_cdb;
+            rollback_flag_from_cdb_backup = rollback_flag_from_cdb;
         end
         else begin
-            roll_back_flag_from_cdb_backup = `FALSE;
+            rollback_flag_from_cdb_backup = `FALSE;
             if (enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET) begin
                 reg_id_from_dispatcher_backup = reg_id_from_dispatcher;
                 rob_id_from_dispatcher_backup = rob_id_from_dispatcher;
@@ -91,7 +91,7 @@ module Register(
         end
         else begin
             if (rdy_in) begin
-                if (roll_back_flag_from_cdb_backup) begin
+                if (rollback_flag_from_cdb_backup) begin
                     for (i = 0; i < `REG_SIZE;i = i+1) begin
                         rob_register[i] <= `ROB_RESET;
                     end

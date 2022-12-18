@@ -42,7 +42,6 @@ module ReorderBuffer(
     output reg[`ADDR_TYPE ] inst_pos_to_predictor,
 
     // connect with fetcher
-    output reg rollback_flag_to_fetcher,
     output reg[`ADDR_TYPE ] target_pc_pos_to_fetcher,
 
     // info from cdb broadcast
@@ -56,7 +55,8 @@ module ReorderBuffer(
     input wire[`DATA_TYPE ] result_from_lsu,
 
 
-    // broadcast
+    // broadcast 
+    output reg rollback_flag,
     output reg commit_flag,
     output wire full_to_cdb
 
@@ -97,7 +97,7 @@ module ReorderBuffer(
 
 
     always @(posedge clk_in) begin
-        if (rst_in || rollback_flag_to_fetcher) begin
+        if (rst_in || rollback_flag) begin
             for (i = 0; i < `ROB_SIZE;i = i+1) begin
                 busy[i] <= `FALSE;
                 is_ready[i] <= `FALSE;
@@ -117,7 +117,7 @@ module ReorderBuffer(
             tail <= `ROB_RESET;
             element_num <= `ROB_RESET;
             enable_to_predictor <= `FALSE;
-            rollback_flag_to_fetcher <= `FALSE;
+            rollback_flag <= `FALSE;
             commit_flag <= `FALSE;
         end else if (rdy_in) begin
             // calcu the element number
@@ -171,14 +171,14 @@ module ReorderBuffer(
                     inst_pos_to_predictor <= inst_pos[head];
                     jump_result_to_predictor <= if_jump_result[head];
                     if (if_jump_predicted[head] != if_jump_result[head]) begin
-                        rollback_flag_to_fetcher <= `TRUE;
+                        rollback_flag <= `TRUE;
                         target_pc_pos_to_fetcher <= if_jump_result[head] ? target_pos[head] : rollback_pos[head];
                     end else begin
-                        rollback_flag_to_fetcher <= `FALSE;
+                        rollback_flag <= `FALSE;
                     end
                 end else begin
                     enable_to_predictor <= `FALSE;
-                    rollback_flag_to_fetcher <= `FALSE;
+                    rollback_flag <= `FALSE;
                 end
                 busy[head] <= `FALSE;
                 is_ready[head] <= `FALSE;
@@ -196,7 +196,7 @@ module ReorderBuffer(
             end else begin
                 commit_flag <= `FALSE;
                 enable_to_predictor <= `FALSE;
-                rollback_flag_to_fetcher <= `FALSE;
+                rollback_flag <= `FALSE;
             end
             if (io_rob_id_from_lsb != `ROB_RESET && busy[io_rob_id_from_lsb-1]) begin
                 is_io_inst[io_rob_id_from_lsb-1] <= `TRUE;

@@ -42,7 +42,6 @@ module LoadStoreBuffer(
     input wire[`ROB_TYPE ] head_io_rob_id_from_rob,
     output wire[`ROB_TYPE ] io_rob_id_to_rob,
     input wire roll_back_flag_from_rob
-
 );
 
     reg busy[`LSB_SIZE -1:0];
