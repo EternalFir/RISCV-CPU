@@ -248,8 +248,8 @@ module cpu(
         // connect with ram
         .read_write_flag_to_ram(mem_wr),
         .address_to_ram(mem_a),
-        .data_to_ram(mem_din),
-        .data_from_ram(mem_dout),
+        .data_to_ram(mem_dout),
+        .data_from_ram(mem_din),
 
         // connect with fetcher
         .enable_from_fetcher(enable_from_fetcher_to_memcont),

@@ -49,7 +49,7 @@ module Fetcher(
     reg[`ADDR_TYPE ] inst_pos_queue[`IQUEUE_SIZE_-1:0];
     reg inst_jump_predict_queue[`IQUEUE_SIZE_ -1:0];
     reg[`ADDR_TYPE ] inst_rollback_pos_queue[`IQUEUE_SIZE_ -1:0];
-    reg[3:0] inst_quque_num;
+    reg[3:0] inst_queue_num;
     // reg[`INST_QUEUE_TYPE ] inst_read_num;
     reg end_inst_read;
     reg[`ADDR_TYPE ] offset;
@@ -60,8 +60,8 @@ module Fetcher(
     reg need_inst_load;
     reg[`ADDR_TYPE ] pc_load_start;
 
-    wire [`INST_TYPE ] temp_inst=inst_from_memcont;
-    wire[`ADDR_TYPE ] temp_inst_pos=pc_load_start+icache_get_cnt*32;
+    wire[`INST_TYPE ] temp_inst = inst_from_memcont;
+    wire[`ADDR_TYPE ] temp_inst_pos = pc_load_start+icache_get_cnt*4;
 
     integer i;
 
@@ -70,6 +70,12 @@ module Fetcher(
 
     assign pc_to_predictor = pc_pos_now;
     assign inst_to_predictor = target_inst_in_cache;
+
+
+    reg dbg_inst_load;
+    reg[3:0] dbg_run_time_test;
+    reg dbg_access_test_1;
+
 
     always @(posedge clk_in) begin
         if (rst_in == `TRUE) begin
@@ -88,7 +94,7 @@ module Fetcher(
             inst_to_dispatcher <= `INST_RESET;
             pc_pos_now <= `ADDR_RESET;
             // pc_pos_next <= `ADDR_RESET;
-            inst_quque_num <= 4'h0;
+            inst_queue_num <= 4'h0;
             // inst_read_num <= `INST_QUEUE_RESET;
             end_inst_read <= `TRUE;
             for (i = 0; i < `IQUEUE_SIZE_;i = i+1) begin
@@ -102,6 +108,12 @@ module Fetcher(
             // single_inst_read_flag <= single_inst_read_end_flag <= `TRUE;
             reset_to_memcont <= `FALSE;
             idle_to_dispatcher <= `FALSE;
+
+
+            dbg_inst_load <= `FALSE;
+            dbg_run_time_test <= 0;
+            dbg_access_test_1<=`FALSE ;
+
         end
         else if (rdy_in == `TRUE) begin
             if (rollback_flag_from_rob) begin
@@ -119,18 +131,33 @@ module Fetcher(
 
                 if (need_inst_load || busy_with_memcont) begin
                     if (!busy_with_memcont) begin
+
+                        dbg_inst_load <= `TRUE;
+
+
                         busy_with_memcont <= `TRUE;
                         pc_load_start <= pc_pos_now;
                         enable_to_memcont <= `TRUE;
                         icache_get_cnt <= 8'h0;
+
+
+
+                    end else begin
+
+                        dbg_inst_load <= `FALSE;
+
                     end
                     if (!end_from_memcont) begin
                         if (one_inst_finish_from_momcont) begin
                             // 使用指令对应的实际地址值进行 hash ，以避免后读入的指令覆盖了前面的
                             icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
-                            icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*32;
+                            icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
                             icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
                             icache_get_cnt <= icache_get_cnt+1;
+
+
+                            dbg_run_time_test<=dbg_run_time_test+1;
+
                         end
                         if (icache_get_cnt == `INST_CNT_NUM) begin
                             enable_to_memcont <= `FALSE;
@@ -142,14 +169,14 @@ module Fetcher(
                     end
                 end
                 // into iqueue
-                if (inst_quque_num <= 3'h4) begin
+                if (inst_queue_num <= 3'h4) begin
                     // pc_pos_now <= pc_pos_next;
                     if (icache_vailed[pc_pos_now[8:0]] && icache_pos[pc_pos_now[8:0]] == pc_pos_now) begin // hit
-                        inst_queue[inst_quque_num] <= icache_inst[pc_pos_now[8:0]];
-                        inst_pos_queue[inst_quque_num] <= icache_pos[pc_pos_now[8:0]];
-                        inst_jump_predict_queue[inst_quque_num] <= jump_predict_flag_from_predictor;
-                        inst_rollback_pos_queue[inst_quque_num] <= pc_pos_now+32;
-                        inst_quque_num <= inst_quque_num+1;
+                        inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[8:0]];
+                        inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[8:0]];
+                        inst_jump_predict_queue[inst_queue_num] <= jump_predict_flag_from_predictor;
+                        inst_rollback_pos_queue[inst_queue_num] <= pc_pos_now+1;
+                        inst_queue_num <= inst_queue_num+1;
                         need_inst_load <= `FALSE;
                         // jump_predict
                         if (jump_predict_flag_from_predictor) begin
@@ -158,15 +185,26 @@ module Fetcher(
                             // rollback_pos_to_dispatcher <= pc_pos_now+32;
                         end else begin
                             // if_jump_flag_predicted_to_dispatcher <= `FALSE;
-                            pc_pos_now <= pc_pos_now+32;
+                            pc_pos_now <= pc_pos_now+4;
                         end
                     end else begin // miss
-                        if (busy_with_memcont) begin// 此时若正在读取，也正好读完为止（memcont的计数）,注意测试刚好读完的状态
-                            pc_load_start <= pc_pos_now;
-                            icache_get_cnt <= 0;
-                        end else begin
-                            need_inst_load <= `TRUE; // 下一周期开始读取
-                        end
+
+                        need_inst_load<=`TRUE ;
+
+                        // if (busy_with_memcont) begin// 此时若正在读取，也正好读完为止（memcont的计数）,注意测试刚好读完的状态
+                        //     pc_load_start <= pc_pos_now;
+                        //     icache_get_cnt <= 0;
+                        //
+                        //     dbg_access_test_1<=`TRUE ;
+                        //
+                        // end else begin
+                        //     need_inst_load <= `TRUE; // 下一周期开始读取
+                        //
+                        //
+                        //     dbg_access_test_1<=`FALSE ;
+                        //
+                        //
+                        // end
                     end
                 end
 
@@ -174,17 +212,17 @@ module Fetcher(
                 // inst-pre_load
 
 
-                // if (~busy_with_memcont && inst_quque_num <= 3'h4) begin
+                // if (~busy_with_memcont && inst_queue_num <= 3'h4) begin
                 //     end_inst_read <= `FALSE;
                 //     inst_read_num <= `INST_QUEUE_RESET;
                 //     busy_with_memcont <= `TRUE;
                 // end
                 // if (~end_inst_read && busy_with_memcont) begin
                 //     if (single_inst_read_end_flag) begin
-                //         if (inst_quque_num > 1) begin
+                //         if (inst_queue_num > 1) begin
                 //             // get new pc address
-                //             if (((inst_queue[inst_quque_num-1] << 25)>> 30) == 32'h3) begin // is branch inst
-                //                 inst_handle_now <= inst_queue[inst_quque_num-1];
+                //             if (((inst_queue[inst_queue_num-1] << 25)>> 30) == 32'h3) begin // is branch inst
+                //                 inst_handle_now <= inst_queue[inst_queue_num-1];
                 //                 offset <= `ADDR_RESET;
                 //                 case ((inst_handle_now << 28)>> 28)
                 //                     32'h3: begin
@@ -204,7 +242,7 @@ module Fetcher(
                 //                     end
                 //                 endcase
                 //                 enable_to_predictor <= `TRUE;
-                //                 pc_to_predictor <= inst_pos_queue[inst_quque_num-1];
+                //                 pc_to_predictor <= inst_pos_queue[inst_queue_num-1];
                 //                 if (jump_predict_flag_from_predictor) begin
                 //                     pc_pos_now <= pc_pos_next-32+offset;
                 //
@@ -265,7 +303,7 @@ module Fetcher(
                     //         inst_queue[i] <= inst_queue[i+1];
                     //         inst_pos_queue[i] <= inst_pos_queue[i+1];
                     //     end
-                    //     inst_quque_num <= inst_quque_num-1;
+                    //     inst_queue_num <= inst_queue_num-1;
                     //     end_to_dispatcher <= `TRUE;
                     // end
                     // else begin

@@ -5,6 +5,8 @@ riscv/testspace/*
 
 !.keep
 
+testdata(compiled)
+
 .idea
 
 ./riscv/src/*.out

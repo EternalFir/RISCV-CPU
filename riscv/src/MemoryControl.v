@@ -41,7 +41,7 @@ module MemoryControl(
         if (reset_from_fetcher == `TRUE) begin
             inst_read_cnt <= `INST_CNT_NUM;
             inst_to_fetcher <= `INST_RESET;
-            end_to_fetcher <= `TRUE;
+            end_to_fetcher <= `FALSE;
         end
     end
 
@@ -58,15 +58,17 @@ module MemoryControl(
             one_inst_finish_to_fetcher <= `FALSE;
         end
         else if (rdy_in) begin
-            end_to_fetcher <= `TRUE ;
-            end_to_lsu <= `TRUE ;
+            end_to_fetcher <= `FALSE;
+            end_to_lsu <= `TRUE;
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
             if (enable_from_lsu == `TRUE) begin // 存在 icache，故 memory 带宽应该优先保证 lsu 使用
                 if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
                     rw_end_ram <= `FALSE;
                     rw_block_ram <= 0;
-                    address_to_ram<=address_from_lsu;
+                    address_to_ram <= address_from_lsu;
+                end else begin
+                    address_to_ram <= address_to_ram+1;
                 end
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
                     read_write_flag_to_ram <= `READ_SIT;
@@ -104,18 +106,20 @@ module MemoryControl(
                     // rw_end_ram <= `FALSE;
                     end_to_fetcher <= `FALSE;
                 end
-                if (rw_block_ram == 0) begin
-                    address_to_ram <= addrress_from_fetcher+inst_read_cnt;
+                if (rw_block_ram == 4) begin
+                    address_to_ram <= addrress_from_fetcher+(inst_read_cnt+1)*4;
+                end else begin
+                    address_to_ram <= address_to_ram+1;
                 end
                 if (rw_block_ram == 1) begin
                     one_inst_finish_to_fetcher <= `FALSE;
                 end
                 if (end_to_fetcher == `FALSE) begin
                     case (rw_block_ram)
-                        2'h0: inst_to_fetcher[7:0] <= data_from_ram;
-                        2'h1: inst_to_fetcher[15:8] <= data_from_ram;
-                        2'h2: inst_to_fetcher[23:16] <= data_from_ram;
-                        2'h3: inst_to_fetcher[31:24] <= data_from_ram;
+                        3'h1: inst_to_fetcher[7:0] <= data_from_ram;
+                        3'h2: inst_to_fetcher[15:8] <= data_from_ram;
+                        3'h3: inst_to_fetcher[23:16] <= data_from_ram;
+                        3'h4: inst_to_fetcher[31:24] <= data_from_ram;
                     endcase
                     rw_block_ram <= rw_block_ram+1;
                     if (rw_block_ram == 4) begin
@@ -126,7 +130,6 @@ module MemoryControl(
                 end
                 if (inst_read_cnt == `INST_CNT_NUM) begin
                     end_to_fetcher <= `TRUE;
-
 
                 end
             end
