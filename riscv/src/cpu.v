@@ -97,6 +97,9 @@ module cpu(
     wire end_from_memcont_to_lsu;
     wire[`DATA_TYPE ] data_from_memcont_to_lsu;
 
+    // memory control broadcast
+    wire aviliable_from_memcont;
+
     // connection between fetcher and predictor
     wire[`ADDR_TYPE ] imm_from_predictor_to_fetcher;
     wire jump_predict_flag_from_predictor_to_fetcher;
@@ -153,7 +156,7 @@ module cpu(
     wire busy_from_alu_to_rs;
 
     // reservation station broadcast to cdb
-    wire [`ROB_TYPE ]rob_id_enec_now_from_rs_to_cdb;
+    wire[`ROB_TYPE ] rob_id_enec_now_from_rs_to_cdb;
 
     // alu broadcast to cdb
     wire enable_from_alu_to_cdb;
@@ -265,7 +268,10 @@ module cpu(
         .address_from_lsu(address_from_lsu_to_memcont),
         .data_from_lsu(data_from_lsu_to_memcont),
         .end_to_lsu(end_from_memcont_to_lsu),
-        .data_to_lsu(data_from_memcont_to_lsu)
+        .data_to_lsu(data_from_memcont_to_lsu),
+
+        // broad cast to fetcher and lsu
+        .aviliable(aviliable_from_memcont)
     );
 
     Fetcher fetcher(
@@ -277,6 +283,7 @@ module cpu(
         .end_from_memcont(end_from_memcont_to_fetcher),
         .one_inst_finish_from_momcont(one_inst_finish_from_memcont_to_fetcher),
         .inst_from_memcont(inst_from_memcont_to_fetcher),
+        .aviliable_from_memcont(aviliable_from_memcont),
         .enable_to_memcont(enable_from_fetcher_to_memcont),
         .address_to_memcont(address_from_fetcher_to_memcont),
         .reset_to_memcont(reset_from_fetcher_to_memcont),
@@ -512,6 +519,7 @@ module cpu(
         // connect with memory control
         .end_from_memcont(end_from_memcont_to_lsu),
         .data_from_memcont(data_from_memcont_to_lsu),
+        .aviliable_from_memcont(aviliable_from_memcont),
         .enable_to_memcont(enable_from_lsu_to_memcont),
         .read_write_flag_to_memcont(read_write_flag_from_lsu_to_memcont),
         .address_to_memcont(address_from_lsu_to_memcont),

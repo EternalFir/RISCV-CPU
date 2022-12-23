@@ -17,6 +17,7 @@ module LSU(
     // connect wiith memcontrol
     input wire end_from_memcont,
     input wire[`DATA_TYPE ] data_from_memcont,
+    input wire aviliable_from_memcont,
     output reg enable_to_memcont,
     output wire read_write_flag_to_memcont, // 1 for read, 0 for write
     output wire[`ADDR_TYPE ] address_to_memcont,

@@ -28,18 +28,25 @@ module MemoryControl(
     input wire[`DATA_TYPE ] data_from_lsu,
     // input wire start_from_lsu,
     output reg end_to_lsu,
-    output reg[`DATA_TYPE ] data_to_lsu
+    output reg[`DATA_TYPE ] data_to_lsu,
 
+    // broadcast to fetcher and lsu
+    output reg aviliable
 );
 
     reg[2:0] rw_block_ram;
     reg rw_end_ram;
 
+    reg is_with_lsu;
+    reg is_with_fetcher;
+    reg one_inst_going_to_finish;
+
     reg[`INST_CNT_TYPE ] inst_read_cnt;
+
 
     always @(*) begin
         if (reset_from_fetcher == `TRUE) begin
-            inst_read_cnt <= `INST_CNT_NUM;
+            inst_read_cnt <= `INST_CNT_RESET;
             inst_to_fetcher <= `INST_RESET;
             end_to_fetcher <= `FALSE;
         end
@@ -54,22 +61,33 @@ module MemoryControl(
             data_to_lsu <= `DATA_RESET;
             rw_block_ram <= 3'h7;
             rw_end_ram <= `TRUE;
-            inst_read_cnt <= `INST_CNT_NUM;
+            inst_read_cnt <= `INST_CNT_RESET;
             one_inst_finish_to_fetcher <= `FALSE;
+            one_inst_going_to_finish <= `FALSE;
+            end_to_fetcher <= `FALSE;
+            aviliable <= `TRUE;
+            is_with_lsu <= `FALSE;
+            is_with_fetcher <= `FALSE;
         end
         else if (rdy_in) begin
-            end_to_fetcher <= `FALSE;
+            if (one_inst_going_to_finish) begin
+                one_inst_finish_to_fetcher <= `TRUE;
+                one_inst_going_to_finish <= `FALSE;
+            end else begin
+                one_inst_finish_to_fetcher <= `FALSE;
+            end
+            // end_to_fetcher <= `FALSE;
             end_to_lsu <= `TRUE;
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
-            if (enable_from_lsu == `TRUE) begin // 存在 icache，故 memory 带宽应该优先保证 lsu 使用
-                if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
-                    rw_end_ram <= `FALSE;
-                    rw_block_ram <= 0;
-                    address_to_ram <= address_from_lsu;
-                end else begin
-                    address_to_ram <= address_to_ram+1;
-                end
+            if (aviliable && enable_from_lsu) begin
+                aviliable <= `FALSE;
+                is_with_lsu <= `TRUE;
+                rw_block_ram <= 0;
+                end_to_lsu <= `FALSE;
+                address_to_ram <= address_from_lsu;
+            end
+            if (is_with_lsu) begin
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
                     read_write_flag_to_ram <= `READ_SIT;
                     case (rw_block_ram)
@@ -88,52 +106,85 @@ module MemoryControl(
                         2'h3: data_to_ram <= data_from_lsu[31:24];
                     endcase
                 end
-                if (rw_block_ram >= 3'h3) begin // 是否直接就够了，还是说要再延一个周期
-                    rw_end_ram <= `TRUE;
-                end
                 rw_block_ram <= rw_block_ram+1;
-                if (rw_end_ram) begin
+                address_to_ram <= address_to_ram+1;
+                if (rw_block_ram == 4) begin
                     end_to_lsu <= `TRUE;
+                    // aviliable <= `TRUE;
+                    is_with_lsu <= `FALSE;
                 end
             end
-            else if (enable_from_fetcher) begin
+            // if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
+            //     rw_end_ram <= `FALSE;
+            //     rw_block_ram <= 0;
+            //     address_to_ram <= address_from_lsu;
+            // end else begin
+            //     address_to_ram <= address_to_ram+1;
+            // end
+            // if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
+            //     read_write_flag_to_ram <= `READ_SIT;
+            //     case (rw_block_ram)
+            //         2'h0: data_to_lsu[7:0] <= data_from_ram;
+            //         2'h1: data_to_lsu[15:8] <= data_from_ram;
+            //         2'h2: data_to_lsu[23:16] <= data_from_ram;
+            //         2'h3: data_to_lsu[31:24] <= data_from_ram;
+            //     endcase
+            // end
+            // else begin // for write
+            //     read_write_flag_to_ram <= `WRITE_SIT;
+            //     case (rw_block_ram)
+            //         2'h0: data_to_ram <= data_from_lsu[7:0];
+            //         2'h1: data_to_ram <= data_from_lsu[15:8];
+            //         2'h2: data_to_ram <= data_from_lsu[23:16];
+            //         2'h3: data_to_ram <= data_from_lsu[31:24];
+            //     endcase
+            // end
+            // if (rw_block_ram >= 3'h3) begin // 是否直接就够了，还是说要再延一个周期
+            //     rw_end_ram <= `TRUE;
+            // end
+            // rw_block_ram <= rw_block_ram+1;
+            // if (rw_end_ram) begin
+            //     end_to_lsu <= `TRUE;
+            // end
+            if (aviliable && enable_from_fetcher) begin
+                aviliable <= `FALSE;
+                end_to_fetcher <= `FALSE;
+                is_with_fetcher <= `TRUE;
                 read_write_flag_to_ram <= `READ_SIT;
-                if (inst_read_cnt == `INST_CNT_NUM) begin
-                    inst_read_cnt <= 0;
-                    one_inst_finish_to_fetcher <= `FALSE;
-                end
-                if (inst_read_cnt == 0) begin
-                    // rw_end_ram <= `FALSE;
-                    end_to_fetcher <= `FALSE;
-                end
-                if (rw_block_ram == 4) begin
+                address_to_ram <= addrress_from_fetcher;
+                inst_read_cnt <= 0;
+                rw_block_ram <= 0;
+            end
+            if (is_with_fetcher) begin
+                case (rw_block_ram)
+                    3'h1: inst_to_fetcher[7:0] <= data_from_ram;
+                    3'h2: inst_to_fetcher[15:8] <= data_from_ram;
+                    3'h3: inst_to_fetcher[23:16] <= data_from_ram;
+                    3'h0: inst_to_fetcher[31:24] <= data_from_ram;
+                endcase
+                rw_block_ram <= rw_block_ram+1;
+                if (rw_block_ram == 3) begin
+                    rw_block_ram <= 0;
+                    inst_read_cnt <= inst_read_cnt+1;
                     address_to_ram <= addrress_from_fetcher+(inst_read_cnt+1)*4;
+                    one_inst_going_to_finish <= `TRUE;
                 end else begin
                     address_to_ram <= address_to_ram+1;
-                end
-                if (rw_block_ram == 1) begin
-                    one_inst_finish_to_fetcher <= `FALSE;
-                end
-                if (end_to_fetcher == `FALSE) begin
-                    case (rw_block_ram)
-                        3'h1: inst_to_fetcher[7:0] <= data_from_ram;
-                        3'h2: inst_to_fetcher[15:8] <= data_from_ram;
-                        3'h3: inst_to_fetcher[23:16] <= data_from_ram;
-                        3'h4: inst_to_fetcher[31:24] <= data_from_ram;
-                    endcase
-                    rw_block_ram <= rw_block_ram+1;
-                    if (rw_block_ram == 4) begin
-                        rw_block_ram <= 0;
-                        inst_read_cnt <= inst_read_cnt+1;
-                        one_inst_finish_to_fetcher <= `TRUE;
-                    end
+                    one_inst_going_to_finish <= `FALSE;
                 end
                 if (inst_read_cnt == `INST_CNT_NUM) begin
                     end_to_fetcher <= `TRUE;
-
+                    // inst_read_cnt <= `INST_CNT_RESET;
+                    // aviliable<=`TRUE ;
+                    is_with_fetcher <= `FALSE;
                 end
             end
-            else begin
+            if (!aviliable && !enable_from_fetcher && !enable_from_lsu) begin // reset clk
+                aviliable <= `TRUE;
+                end_to_fetcher<=`FALSE ;
+                end_to_lsu<=`FALSE ;
+            end
+            if (!is_with_lsu && !is_with_fetcher) begin
                 rw_block_ram <= 3'h0;
             end
         end

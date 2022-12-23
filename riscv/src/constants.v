@@ -10,7 +10,8 @@
 `define READ_SIT 0
 `define WRITE_SIT 1
 `define INST_CNT_TYPE 7:0
-`define INST_CNT_NUM 8
+`define INST_CNT_NUM 4
+`define INST_CNT_RESET 0
 `define RAM_IO_PORT 32'h30000
 
 // constants of fetcher
