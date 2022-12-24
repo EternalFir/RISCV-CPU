@@ -162,7 +162,7 @@ module Dispatcher(
             imm_to_rs <= imm_from_decoder;
             V1_to_rs <= V1_insert;
             V2_to_rs <= V2_insert;
-            inst_pos_to_rs <= inst_from_fetcher;
+            inst_pos_to_rs <=inst_pos_from_fetcher;
             // lsb
             op_enum_to_lsb <= op_enum_from_decoder;
             Q1_to_lsb <= Q1_insert;

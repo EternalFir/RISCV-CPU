@@ -41,6 +41,9 @@ module MemoryControl(
     reg is_with_fetcher;
     reg one_inst_going_to_finish;
 
+    reg is_inst_before;
+    reg is_data_before;
+
     reg[`INST_CNT_TYPE ] inst_read_cnt;
 
 
@@ -68,6 +71,8 @@ module MemoryControl(
             aviliable <= `TRUE;
             is_with_lsu <= `FALSE;
             is_with_fetcher <= `FALSE;
+            is_inst_before<=`FALSE ;
+            is_data_before<=`FALSE ;
         end
         else if (rdy_in) begin
             if (one_inst_going_to_finish) begin
@@ -77,7 +82,7 @@ module MemoryControl(
                 one_inst_finish_to_fetcher <= `FALSE;
             end
             // end_to_fetcher <= `FALSE;
-            end_to_lsu <= `TRUE;
+            // end_to_lsu <= `TRUE;
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
             if (aviliable && enable_from_lsu) begin
@@ -86,6 +91,8 @@ module MemoryControl(
                 rw_block_ram <= 0;
                 end_to_lsu <= `FALSE;
                 address_to_ram <= address_from_lsu;
+                is_data_before<=`TRUE ;
+                is_inst_before<=`FALSE ;
             end
             if (is_with_lsu) begin
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
@@ -146,7 +153,7 @@ module MemoryControl(
             // if (rw_end_ram) begin
             //     end_to_lsu <= `TRUE;
             // end
-            if (aviliable && enable_from_fetcher) begin
+            if (aviliable && enable_from_fetcher && !enable_from_lsu) begin // 优先满足lsu
                 aviliable <= `FALSE;
                 end_to_fetcher <= `FALSE;
                 is_with_fetcher <= `TRUE;
@@ -154,6 +161,8 @@ module MemoryControl(
                 address_to_ram <= addrress_from_fetcher;
                 inst_read_cnt <= 0;
                 rw_block_ram <= 0;
+                is_inst_before<=`TRUE ;
+                is_data_before<=`FALSE ;
             end
             if (is_with_fetcher) begin
                 case (rw_block_ram)
@@ -179,9 +188,13 @@ module MemoryControl(
                     is_with_fetcher <= `FALSE;
                 end
             end
-            if (!aviliable && !enable_from_fetcher && !enable_from_lsu) begin // reset clk
-                aviliable <= `TRUE;
+            // reset
+            if(!aviliable && is_inst_before && !enable_from_fetcher)begin
+                aviliable<=`TRUE ;
                 end_to_fetcher<=`FALSE ;
+            end
+            if(!aviliable && is_data_before && !enable_from_lsu)begin
+                aviliable<=`TRUE ;
                 end_to_lsu<=`FALSE ;
             end
             if (!is_with_lsu && !is_with_fetcher) begin

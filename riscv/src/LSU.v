@@ -10,7 +10,7 @@ module LSU(
     input wire[`OP_ENUM_TYPE ] op_enum_from_lsb,
     input wire[`ADDR_TYPE ] object_address_from_lsb,
     input wire[`DATA_TYPE ] data_from_lsb,
-    output wire busy_to_lsb,
+    output reg busy_to_lsb,
     output reg end_to_lsb,
     output reg[`DATA_TYPE ] data_to_lsb,
 
@@ -31,7 +31,7 @@ module LSU(
     input wire rollback_flag_from_rob
 );
 
-    assign busy_to_lsb = (enable_from_lsb || !end_to_lsb);
+    // assign busy_to_lsb = (enable_from_lsb || !end_to_lsb);
     assign read_write_flag_to_memcont = read_write_falg_from_lsb;
     assign address_to_memcont = object_address_from_lsb;
 
@@ -39,82 +39,157 @@ module LSU(
     always @(posedge clk_in) begin
         if (rst_in) begin
             enable_to_memcont <= `FALSE;
-            end_to_lsb <= `TRUE;
+            end_to_lsb <= `FALSE ;
+            busy_to_lsb<=`FALSE ;
+            enable_to_cdb <= `FALSE;
         end
         else if (rdy_in) begin
-            if (enable_from_lsb) begin
-                if (end_from_memcont && end_to_lsb) begin // first time
-                    enable_to_memcont <= `TRUE;
-                    end_to_lsb <= `FALSE;
-                    case (op_enum_from_lsb)
-                        `OP_ENUM_LB : begin
-                    end
-                        `OP_ENUM_LH: begin
-
-                    end
-                        `OP_ENUM_LW: begin
-
-                    end
-                        `OP_ENUM_LBU: begin
-
-                    end
-                        `OP_ENUM_LHU: begin
-
-                    end
-                        `OP_ENUM_SB: begin
-                        data_to_memcont <= {{24{data_from_lsb[7]}}, data_from_lsb[7:0]};
-                    end
-                    `OP_ENUM_SH: begin
-                        data_to_memcont <= {{16{data_from_lsb[15]}}, data_from_lsb[15:0]};
-                    end
-                    `OP_ENUM_SW: begin
-                        data_to_memcont <= data_from_lsb;
-                    end
-                    endcase
+            enable_to_cdb<=`FALSE ;
+            if(enable_from_lsb && !busy_to_lsb)begin // begin
+                busy_to_lsb<=`TRUE ;
+                enable_to_memcont<=`TRUE ;
+                case (op_enum_from_lsb)
+                    `OP_ENUM_LB : begin
                 end
-                if (end_from_memcont && !end_to_lsb) begin // finish with memcont
-                    enable_to_memcont <= `FALSE;
-                    end_to_lsb <= `TRUE;
-                    case (op_enum_from_lsb)
-                        `OP_ENUM_LB : begin
-                        data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
-                        enable_to_cdb <= `TRUE;
-                        result_to_cdb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
-                    end
                     `OP_ENUM_LH: begin
-                        data_to_lsb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
-                        enable_to_cdb <= `TRUE;
-                        result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
-                    end
+
+                end
                     `OP_ENUM_LW: begin
-                        data_to_lsb <= data_from_memcont;
-                        enable_to_cdb <= `TRUE;
-                        result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
-                    end
+
+                end
                     `OP_ENUM_LBU: begin
-                        data_to_lsb <= `DATA_RESET +{ data_from_memcont[7:0]};
-                        enable_to_cdb <= `TRUE;
-                        result_to_cdb <= `DATA_RESET +{ data_from_memcont[7:0]};
-                    end
+
+                end
                     `OP_ENUM_LHU: begin
-                        data_to_lsb <= `DATA_RESET +{ data_from_memcont[15:0]};
-                        enable_to_cdb <= `TRUE;
-                        result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
-                    end
+
+                end
                     `OP_ENUM_SB: begin
-                        enable_to_cdb <= `FALSE;
-                    end
-                    `OP_ENUM_SH: begin
-                        enable_to_cdb <= `FALSE;
-                    end
-                    `OP_ENUM_SW: begin
-                        enable_to_cdb <= `FALSE;
-                    end
-                    endcase
-                end else begin
+                    data_to_memcont <= {{24{data_from_lsb[7]}}, data_from_lsb[7:0]};
+                end
+                `OP_ENUM_SH: begin
+                    data_to_memcont <= {{16{data_from_lsb[15]}}, data_from_lsb[15:0]};
+                end
+                `OP_ENUM_SW: begin
+                    data_to_memcont <= data_from_lsb;
+                end
+                endcase
+            end
+            if( end_from_memcont &&enable_to_memcont)begin // finish
+                enable_to_memcont<=`FALSE ;
+                busy_to_lsb<=`FALSE ;
+                case (op_enum_from_lsb)
+                    `OP_ENUM_LB : begin
+                    data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+                    enable_to_cdb <= `TRUE;
+                    result_to_cdb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+                end
+                `OP_ENUM_LH: begin
+                    data_to_lsb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                    enable_to_cdb <= `TRUE;
+                    result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                end
+                `OP_ENUM_LW: begin
+                    data_to_lsb <= data_from_memcont;
+                    enable_to_cdb <= `TRUE;
+                    result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                end
+                `OP_ENUM_LBU: begin
+                    data_to_lsb <= `DATA_RESET +{data_from_memcont[7:0]};
+                    enable_to_cdb <= `TRUE;
+                    result_to_cdb <= `DATA_RESET +{data_from_memcont[7:0]};
+                end
+                `OP_ENUM_LHU: begin
+                    data_to_lsb <= `DATA_RESET +{data_from_memcont[15:0]};
+                    enable_to_cdb <= `TRUE;
+                    result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
+                end
+                `OP_ENUM_SB: begin
                     enable_to_cdb <= `FALSE;
                 end
+                `OP_ENUM_SH: begin
+                    enable_to_cdb <= `FALSE;
+                end
+                `OP_ENUM_SW: begin
+                    enable_to_cdb <= `FALSE;
+                end
+                endcase
             end
+            // if (enable_from_lsb) begin
+            //     if (end_to_lsb) begin
+            //         enable_to_memcont <= `TRUE;
+            //     end
+            //     if (aviliable_from_memcont && end_to_lsb) begin // first time
+            //         enable_to_memcont <= `TRUE;
+            //         end_to_lsb <= `FALSE;
+            //         case (op_enum_from_lsb)
+            //             `OP_ENUM_LB : begin
+            //         end
+            //             `OP_ENUM_LH: begin
+            //
+            //         end
+            //             `OP_ENUM_LW: begin
+            //
+            //         end
+            //             `OP_ENUM_LBU: begin
+            //
+            //         end
+            //             `OP_ENUM_LHU: begin
+            //
+            //         end
+            //             `OP_ENUM_SB: begin
+            //             data_to_memcont <= {{24{data_from_lsb[7]}}, data_from_lsb[7:0]};
+            //         end
+            //         `OP_ENUM_SH: begin
+            //             data_to_memcont <= {{16{data_from_lsb[15]}}, data_from_lsb[15:0]};
+            //         end
+            //         `OP_ENUM_SW: begin
+            //             data_to_memcont <= data_from_lsb;
+            //         end
+            //         endcase
+            //     end
+            //     if (end_from_memcont && !end_to_lsb) begin // finish with memcont
+            //         enable_to_memcont <= `FALSE;
+            //         end_to_lsb <= `TRUE;
+            //         case (op_enum_from_lsb)
+            //             `OP_ENUM_LB : begin
+            //             data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+            //             enable_to_cdb <= `TRUE;
+            //             result_to_cdb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+            //         end
+            //         `OP_ENUM_LH: begin
+            //             data_to_lsb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+            //             enable_to_cdb <= `TRUE;
+            //             result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+            //         end
+            //         `OP_ENUM_LW: begin
+            //             data_to_lsb <= data_from_memcont;
+            //             enable_to_cdb <= `TRUE;
+            //             result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+            //         end
+            //         `OP_ENUM_LBU: begin
+            //             data_to_lsb <= `DATA_RESET +{data_from_memcont[7:0]};
+            //             enable_to_cdb <= `TRUE;
+            //             result_to_cdb <= `DATA_RESET +{data_from_memcont[7:0]};
+            //         end
+            //         `OP_ENUM_LHU: begin
+            //             data_to_lsb <= `DATA_RESET +{data_from_memcont[15:0]};
+            //             enable_to_cdb <= `TRUE;
+            //             result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
+            //         end
+            //         `OP_ENUM_SB: begin
+            //             enable_to_cdb <= `FALSE;
+            //         end
+            //         `OP_ENUM_SH: begin
+            //             enable_to_cdb <= `FALSE;
+            //         end
+            //         `OP_ENUM_SW: begin
+            //             enable_to_cdb <= `FALSE;
+            //         end
+            //         endcase
+            //     end else begin
+            //         enable_to_cdb <= `FALSE;
+            //     end
+            // end
         end
         else begin
 

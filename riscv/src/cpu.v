@@ -407,7 +407,7 @@ module cpu(
         .rdy_in(rdy_in),
 
         // connection with dispatcher
-        .enable_from_dispatcher(enable_from_dispatcher_to_rob),
+        .enable_from_dispatcher(enable_from_dispatcher_to_rs),
         .op_enum_from_dispatcher(op_enum_from_dispatcher_to_rs),
         .V1_from_dispatcher(V1_from_dispatcher_to_rs),
         .V2_from_dispatcher(V2_from_dispatcher_to_rs),

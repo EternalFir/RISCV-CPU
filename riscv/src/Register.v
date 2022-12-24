@@ -47,8 +47,7 @@ module Register(
     always @(*) begin
         if (rollback_flag_from_cdb) begin
             rollback_flag_from_cdb_backup = rollback_flag_from_cdb;
-        end
-        else begin
+        end else begin
             rollback_flag_from_cdb_backup = `FALSE;
             if (enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET) begin
                 reg_id_from_dispatcher_backup = reg_id_from_dispatcher;
@@ -84,6 +83,12 @@ module Register(
 
     always @(posedge clk_in) begin
         if (rst_in) begin
+            rollback_flag_from_cdb_backup <= `FALSE;
+            rob_free <= `FALSE;
+            rob_id_from_dispatcher_backup <= `ROB_RESET;
+            reg_id_from_dispatcher_backup <= `REG_RESET;
+            rd_from_rob_backup <= `REG_RESET;
+            V_from_rob_backup <= `DATA_RESET;
             for (i = 0; i < `REG_SIZE;i = i+1) begin
                 registers[i] <= `REG_RESET;
                 rob_register[i] <= `ROB_RESET;

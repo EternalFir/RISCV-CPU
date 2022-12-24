@@ -58,7 +58,7 @@ module LoadStoreBuffer(
     reg[`ROB_TYPE ] element_num;
     wire full = element_num >= (`LSB_SIZE -`FULL_PRESERVE);
     wire insert_signal = enable_from_dispatcher;
-    wire issue_signal = busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]);
+    wire issue_signal = busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (((V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) && op_enum[head] <= `OP_ENUM_LHU) || committed[head]);
 
     wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q1_from_dispatcher);
     wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q2_from_dispatcher);
@@ -69,6 +69,10 @@ module LoadStoreBuffer(
     assign io_rob_id_to_rob = ((V1[head]+imm[head]) == `RAM_IO_PORT) ? rob_id[head]:`ROB_RESET;
 
     integer i;
+
+
+    reg dbg_inserted;
+    reg dbg_executed;
 
     always @(posedge clk_in) begin
         if (rst_in || (roll_back_flag_from_rob && commit_tail == `LSB_OUT_OF_RANGE_)) begin
@@ -88,6 +92,11 @@ module LoadStoreBuffer(
                 rob_id[i] <= `ROB_RESET;
                 committed[i] <= `FALSE;
             end
+
+
+            dbg_inserted <= `FALSE;
+            dbg_executed <= `FALSE;
+
         end
         else if (rdy_in) begin
             if (roll_back_flag_from_rob) begin // roll back to commit pos
@@ -103,10 +112,10 @@ module LoadStoreBuffer(
                     end
                 end
             end else begin
-                if (insert_signal && issue_signal) begin
-                    element_num <= element_num+2;
-                end else if (issue_signal || insert_signal) begin
+                if (insert_signal && !issue_signal) begin
                     element_num <= element_num+1;
+                end else if (issue_signal && !insert_signal) begin
+                    element_num <= element_num-1;
                 end
                 // execute
                 if (!busy_from_lsu && busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET) begin
@@ -121,6 +130,9 @@ module LoadStoreBuffer(
                             rob_id[head] <= `ROB_RESET;
                             committed[head] <= `FALSE;
                             head <= (head == `LSB_SIZE-1) ? 0:head+1;
+
+
+                            dbg_executed <= `TRUE;
                         end
                     end else if (op_enum[head] >= `OP_ENUM_SB && op_enum[head] <= `OP_ENUM_SW && committed[head]) begin // store
                         enable_to_lsu <= `TRUE;
@@ -136,12 +148,21 @@ module LoadStoreBuffer(
                         if (commit_tail == head) begin
                             commit_tail <= `LSB_OUT_OF_RANGE_;
                         end
+
+
+                        dbg_executed <= `TRUE;
                     end else begin
                         enable_to_lsu <= `FALSE;
+
+
+                        dbg_executed <= `FALSE;
                     end
                 end
                 else begin
                     enable_to_lsu <= `FALSE;
+
+
+                    dbg_executed <= `FALSE;
                 end
                 // react to commit
                 if (commit_flag_from_rob) begin
@@ -192,6 +213,13 @@ module LoadStoreBuffer(
                     rob_id[tail] <= rob_id_from_dispatcher;
                     committed[tail] <= `FALSE;
                     tail <= (tail == `LSB_SIZE-1) ? 0:tail+1;
+
+
+                    dbg_inserted <= `TRUE;
+                end
+                else begin
+
+                    dbg_inserted <= `FALSE;
                 end
             end
         end

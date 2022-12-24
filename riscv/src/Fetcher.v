@@ -67,7 +67,7 @@ module Fetcher(
     wire need_inst_load = !(icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
     wire hit = (icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
     wire[`INST_TYPE ] target_inst_in_cache = (hit) ? icache_inst[pc_pos_now[10:2]]:`ADDR_RESET;
-    reg[`ADDR_TYPE ] inst_need_to_load_pos;
+    // reg[`ADDR_TYPE ] inst_need_to_load_pos;
 
     assign pc_to_predictor = pc_pos_now;
     assign inst_to_predictor = target_inst_in_cache;
@@ -109,7 +109,7 @@ module Fetcher(
             // single_inst_read_flag <= single_inst_read_end_flag <= `TRUE;
             reset_to_memcont <= `FALSE;
             idle_to_dispatcher <= `FALSE;
-            inst_need_to_load_pos <= `ADDR_RESET;
+            // inst_need_to_load_pos <= `ADDR_RESET;
 
 
             dbg_inst_load <= `FALSE;
@@ -130,7 +130,8 @@ module Fetcher(
                 // get 4 insts a group
                 // icache中的保持线性，是否跳转到iqueue中去考虑
                 if(need_inst_load && aviliable_from_memcont && !busy_with_memcont)begin
-                    address_to_memcont <= inst_need_to_load_pos;
+                    // address_to_memcont <= inst_need_to_load_pos;
+                    address_to_memcont<=pc_pos_now;
                     busy_with_memcont <= `TRUE;
                     pc_load_start <= pc_pos_now;
                     enable_to_memcont <= `TRUE;
@@ -160,59 +161,6 @@ module Fetcher(
 
                     end
                 end
-                //
-                // if (need_inst_load == `TRUE || busy_with_memcont == `TRUE) begin
-                //     if (!busy_with_memcont) begin
-                //
-                //         dbg_inst_load <= `TRUE;
-                //
-                //         address_to_memcont <= inst_need_to_load_pos;
-                //         busy_with_memcont <= `TRUE;
-                //         pc_load_start <= pc_pos_now;
-                //         enable_to_memcont <= `TRUE;
-                //         icache_get_cnt <= 8'h0;
-                //
-                //     end else begin
-                //
-                //         dbg_inst_load <= `FALSE;
-                //
-                //     end
-                //     if(enable_to_memcont)begin
-                //         if (!end_from_memcont) begin
-                //             if (one_inst_finish_from_momcont) begin
-                //                 // 使用指令对应的实际地址值进行 hash ，以避免后读入的指令覆盖了前面的
-                //                 icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
-                //                 icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
-                //                 icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
-                //                 icache_get_cnt <= icache_get_cnt+1;
-                //
-                //                 temp_inst <= inst_from_memcont;
-                //
-                //
-                //                 dbg_run_time_test <= dbg_run_time_test+1;
-                //
-                //             end
-                //             // if (icache_get_cnt == `INST_CNT_NUM) begin
-                //             //     enable_to_memcont <= `FALSE;
-                //             //     busy_with_memcont <= `FALSE;
-                //             // end
-                //         end else begin
-                //             icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
-                //             icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
-                //             icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
-                //             icache_get_cnt <= icache_get_cnt+1;
-                //
-                //             temp_inst <= inst_from_memcont;
-                //             dbg_run_time_test <= dbg_run_time_test+1;
-                //
-                //
-                //             enable_to_memcont <= `FALSE;
-                //             busy_with_memcont <= `FALSE;
-                //         end
-                //     end
-                //
-                // end
-
 
                 // into iqueue
                 if (inst_queue_num <= 3'h4) begin
@@ -221,7 +169,7 @@ module Fetcher(
                         inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[10:2]];
                         inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[10:2]];
                         inst_jump_predict_queue[inst_queue_num] <= jump_predict_flag_from_predictor;
-                        inst_rollback_pos_queue[inst_queue_num] <= pc_pos_now+1;
+                        inst_rollback_pos_queue[inst_queue_num] <= pc_pos_now+4;
                         inst_queue_num <= inst_queue_num+1;
                         // need_inst_load <= `FALSE;
                         // jump_predict
@@ -234,7 +182,7 @@ module Fetcher(
                             pc_pos_now <= pc_pos_now+4;
                         end
                     end else begin // miss
-                        inst_need_to_load_pos <= pc_pos_now;
+                        // inst_need_to_load_pos <= pc_pos_now;
                         // need_inst_load<=`TRUE ;
 
                         // if (busy_with_memcont) begin// 此时若正在读取，也正好读完为止（memcont的计数）,注意测试刚好读完的状态
