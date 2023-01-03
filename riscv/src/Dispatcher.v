@@ -30,6 +30,7 @@ module Dispatcher(
     output reg is_load_to_rob,
     output reg is_store_to_rob,
     output reg is_jump_to_rob,
+    output reg is_jalr_to_rob,
     output reg if_jump_predicted_to_rob,
     output reg[`ADDR_TYPE ] inst_pos_to_rob,
     output reg[`ADDR_TYPE ] rollback_pos_to_rob,
@@ -150,8 +151,9 @@ module Dispatcher(
             is_load_to_rob <= is_load_from_decoder;
             is_store_to_rob <= is_store_from_decoder;
             is_jump_to_rob <= is_jump_from_decoder;
+            is_jalr_to_rob <= (op_enum_from_decoder == `OP_ENUM_JALR) ? `TRUE :`FALSE;
             if_jump_predicted_to_rob <= if_jump_flag_predicted_from_fetcher;
-            inst_pos_to_rob <= inst_from_fetcher;
+            inst_pos_to_rob <= inst_pos_from_fetcher;
             rollback_pos_to_rob <= rollback_pos_from_fetcher;
             // register
             reg_id_to_register <= rd_from_decoder;
@@ -162,7 +164,7 @@ module Dispatcher(
             imm_to_rs <= imm_from_decoder;
             V1_to_rs <= V1_insert;
             V2_to_rs <= V2_insert;
-            inst_pos_to_rs <=inst_pos_from_fetcher;
+            inst_pos_to_rs <= inst_pos_from_fetcher;
             // lsb
             op_enum_to_lsb <= op_enum_from_decoder;
             Q1_to_lsb <= Q1_insert;

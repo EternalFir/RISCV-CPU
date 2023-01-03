@@ -33,7 +33,7 @@ module ALU(
             jump_flag = `TRUE;
         end
         `OP_ENUM_JALR: begin
-            target_pos = V1+imm;
+            target_pos = (V1+imm)&(~1);
             result = inst_pos+4;
             jump_flag = `TRUE;
         end

@@ -23,7 +23,7 @@ module MemoryControl(
 
     //connect with lsu
     input wire enable_from_lsu,
-    input wire read_wirte_flag_from_lsu, // 1 for read, 0 for write
+    input wire read_wirte_flag_from_lsu, // 0 for read, 1 for write
     input wire[`ADDR_TYPE ] address_from_lsu,
     input wire[`DATA_TYPE ] data_from_lsu,
     // input wire start_from_lsu,
@@ -71,8 +71,8 @@ module MemoryControl(
             aviliable <= `TRUE;
             is_with_lsu <= `FALSE;
             is_with_fetcher <= `FALSE;
-            is_inst_before<=`FALSE ;
-            is_data_before<=`FALSE ;
+            is_inst_before <= `FALSE;
+            is_data_before <= `FALSE;
         end
         else if (rdy_in) begin
             if (one_inst_going_to_finish) begin
@@ -91,34 +91,50 @@ module MemoryControl(
                 rw_block_ram <= 0;
                 end_to_lsu <= `FALSE;
                 address_to_ram <= address_from_lsu;
-                is_data_before<=`TRUE ;
-                is_inst_before<=`FALSE ;
+                is_data_before <= `TRUE;
+                is_inst_before <= `FALSE;
+                read_write_flag_to_ram <= read_wirte_flag_from_lsu;
             end
             if (is_with_lsu) begin
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
-                    read_write_flag_to_ram <= `READ_SIT;
+                    // read_write_flag_to_ram <= `READ_SIT;
                     case (rw_block_ram)
-                        2'h0: data_to_lsu[7:0] <= data_from_ram;
-                        2'h1: data_to_lsu[15:8] <= data_from_ram;
-                        2'h2: data_to_lsu[23:16] <= data_from_ram;
-                        2'h3: data_to_lsu[31:24] <= data_from_ram;
+                        3'h1: data_to_lsu[7:0] <= data_from_ram;
+                        3'h2: data_to_lsu[15:8] <= data_from_ram;
+                        3'h3: data_to_lsu[23:16] <= data_from_ram;
+                        3'h4: data_to_lsu[31:24] <= data_from_ram;
                     endcase
+                    rw_block_ram <= rw_block_ram+1;
+                    address_to_ram <= address_to_ram+1;
+                    if (rw_block_ram == 4) begin
+                        end_to_lsu <= `TRUE;
+                        // aviliable <= `TRUE;
+                        is_with_lsu <= `FALSE;
+                    end
                 end
                 else begin // for write
-                    read_write_flag_to_ram <= `WRITE_SIT;
+                    // read_write_flag_to_ram <= `WRITE_SIT;
                     case (rw_block_ram)
                         2'h0: data_to_ram <= data_from_lsu[7:0];
                         2'h1: data_to_ram <= data_from_lsu[15:8];
                         2'h2: data_to_ram <= data_from_lsu[23:16];
                         2'h3: data_to_ram <= data_from_lsu[31:24];
+                        // 3'h1: data_to_ram <= data_from_lsu[7:0];
+                        // 3'h2: data_to_ram <= data_from_lsu[15:8];
+                        // 3'h3: data_to_ram <= data_from_lsu[23:16];
+                        // 3'h4: data_to_ram <= data_from_lsu[31:24];
                     endcase
-                end
-                rw_block_ram <= rw_block_ram+1;
-                address_to_ram <= address_to_ram+1;
-                if (rw_block_ram == 4) begin
-                    end_to_lsu <= `TRUE;
-                    // aviliable <= `TRUE;
-                    is_with_lsu <= `FALSE;
+                    if (rw_block_ram > 0 && rw_block_ram < 4) begin
+                        address_to_ram <= address_to_ram+1;
+                    end else begin
+                        address_to_ram <= address_to_ram;
+                    end
+                    rw_block_ram <= rw_block_ram+1;
+                    if (rw_block_ram == 4) begin
+                        end_to_lsu <= `TRUE;
+                        // aviliable <= `TRUE;
+                        is_with_lsu <= `FALSE;
+                    end
                 end
             end
             // if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
@@ -161,8 +177,8 @@ module MemoryControl(
                 address_to_ram <= addrress_from_fetcher;
                 inst_read_cnt <= 0;
                 rw_block_ram <= 0;
-                is_inst_before<=`TRUE ;
-                is_data_before<=`FALSE ;
+                is_inst_before <= `TRUE;
+                is_data_before <= `FALSE;
             end
             if (is_with_fetcher) begin
                 case (rw_block_ram)
@@ -189,13 +205,13 @@ module MemoryControl(
                 end
             end
             // reset
-            if(!aviliable && is_inst_before && !enable_from_fetcher)begin
-                aviliable<=`TRUE ;
-                end_to_fetcher<=`FALSE ;
+            if (!aviliable && is_inst_before && !enable_from_fetcher) begin
+                aviliable <= `TRUE;
+                end_to_fetcher <= `FALSE;
             end
-            if(!aviliable && is_data_before && !enable_from_lsu)begin
-                aviliable<=`TRUE ;
-                end_to_lsu<=`FALSE ;
+            if (!aviliable && is_data_before && !enable_from_lsu) begin
+                aviliable <= `TRUE;
+                end_to_lsu <= `FALSE;
             end
             if (!is_with_lsu && !is_with_fetcher) begin
                 rw_block_ram <= 3'h0;

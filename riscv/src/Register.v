@@ -25,7 +25,10 @@ module Register(
 
     // info from cdb
     input wire commit_flag_from_cdb,
-    input wire rollback_flag_from_cdb
+    input wire rollback_flag_from_cdb,
+
+    // dbg
+    input wire[`ADDR_TYPE ] dbg_commit_pos_from_rob
 );
     integer i;
 
@@ -42,6 +45,9 @@ module Register(
     assign V2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher) ? V_from_rob_backup:registers[rs2_from_dispatcher];
     assign Q1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs1_from_dispatcher]));
     assign Q2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_RESET : rob_register[rs2_from_dispatcher]));
+
+
+    reg[`DATA_TYPE ] dbg_commit_cnt;
 
 
     always @(*) begin
@@ -93,6 +99,9 @@ module Register(
                 registers[i] <= `REG_RESET;
                 rob_register[i] <= `ROB_RESET;
             end
+
+
+            dbg_commit_cnt <= `DATA_RESET;
         end
         else begin
             if (rdy_in) begin
@@ -109,6 +118,18 @@ module Register(
                         rob_register[rd_from_rob_backup] <= `ROB_RESET;
                     end
                 end
+
+
+                if (commit_flag_from_cdb) begin
+                    if (dbg_commit_cnt >= 32'h80 && dbg_commit_cnt <= 32'h100) begin
+                        $display("commiting, commit_cnt = %h, pc = %h", dbg_commit_cnt, dbg_commit_pos_from_rob);
+                        for (i = 0; i < `REG_SIZE;i = i+1) begin
+                            $display("reg %h : %h", i, registers[i]);
+                        end
+                    end
+                    dbg_commit_cnt <= dbg_commit_cnt+1;
+                end
+
             end
             else begin
             end

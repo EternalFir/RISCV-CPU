@@ -58,7 +58,7 @@ module LoadStoreBuffer(
     reg[`ROB_TYPE ] element_num;
     wire full = element_num >= (`LSB_SIZE -`FULL_PRESERVE);
     wire insert_signal = enable_from_dispatcher;
-    wire issue_signal = busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (((V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) && op_enum[head] <= `OP_ENUM_LHU) || committed[head]);
+    wire issue_signal = !react_halt && busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !busy_from_lsu && (((V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) && op_enum[head] <= `OP_ENUM_LHU) || committed[head]);
 
     wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q1_from_dispatcher);
     wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_RESET :Q2_from_dispatcher);
@@ -70,6 +70,7 @@ module LoadStoreBuffer(
 
     integer i;
 
+    reg react_halt; // 避免一次向lsu连续发送两条指令
 
     reg dbg_inserted;
     reg dbg_executed;
@@ -79,7 +80,7 @@ module LoadStoreBuffer(
             element_num <= `ROB_RESET;
             head <= `LSB_RESET_;
             tail <= `LSB_RESET_;
-            commit_tail <= `LSB_RESET_;
+            commit_tail <= `LSB_OUT_OF_RANGE_;
             enable_to_lsu <= `FALSE;
             for (i = 0; i < `LSB_SIZE; i = i+1) begin
                 busy[i] <= `FALSE;
@@ -92,139 +93,141 @@ module LoadStoreBuffer(
                 rob_id[i] <= `ROB_RESET;
                 committed[i] <= `FALSE;
             end
-
+            react_halt <= `FALSE;
 
             dbg_inserted <= `FALSE;
             dbg_executed <= `FALSE;
 
         end
-        else if (rdy_in) begin
-            if (roll_back_flag_from_rob) begin // roll back to commit pos
-                tail <= (commit_tail == `LSB_SIZE-1) ? 0:commit_tail+1;
-                if (commit_tail > head) begin
-                    element_num <= commit_tail-head+1;
-                end else begin
-                    element_num <= `LSB_SIZE -head+commit_tail+1;
-                end
-                for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                    if (committed[i] == `FALSE || `OP_ENUM_LB <= op_enum[i] && op_enum[i] <= `OP_ENUM_LHU) begin
-                        busy[i] <= `FALSE;
-                    end
-                end
+        else if (~rdy_in) begin
+
+        end
+        else if (roll_back_flag_from_rob) begin // roll back to commit pos
+            tail <= (commit_tail == `LSB_SIZE-1) ? 0:commit_tail+1;
+            if (commit_tail >= head) begin
+                element_num <= commit_tail-head+1;
             end else begin
-                if (insert_signal && !issue_signal) begin
-                    element_num <= element_num+1;
-                end else if (issue_signal && !insert_signal) begin
-                    element_num <= element_num-1;
+                element_num <= `LSB_SIZE -head+commit_tail+1;
+            end
+            for (i = 0; i < `LSB_SIZE;i = i+1) begin
+                if (committed[i] == `FALSE || (`OP_ENUM_LB <= op_enum[i] && op_enum[i] <= `OP_ENUM_LHU)) begin
+                    busy[i] <= `FALSE;
                 end
-                // execute
-                if (!busy_from_lsu && busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET) begin
-                    if (op_enum[head] >= `OP_ENUM_LB && op_enum[head] <= `OP_ENUM_LHU) begin // load
-                        if (V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) begin
-                            enable_to_lsu <= `TRUE;
-                            read_write_flag_to_lsu <= `READ_SIT;
-                            op_enum_to_lsu <= op_enum[head];
-                            object_address_to_lsu <= V1[head]+imm[head];
-                            rob_id_to_cdb <= rob_id[head];
-                            busy[head] <= `FALSE;
-                            rob_id[head] <= `ROB_RESET;
-                            committed[head] <= `FALSE;
-                            head <= (head == `LSB_SIZE-1) ? 0:head+1;
-
-
-                            dbg_executed <= `TRUE;
-                        end
-                    end else if (op_enum[head] >= `OP_ENUM_SB && op_enum[head] <= `OP_ENUM_SW && committed[head]) begin // store
+            end
+        end
+        else begin
+            if (insert_signal && !issue_signal) begin
+                element_num <= element_num+1;
+            end else if (issue_signal && !insert_signal) begin
+                element_num <= element_num-1;
+            end
+            // execute
+            if (end_from_lsu) begin
+                react_halt <= `FALSE;
+            end
+            if (!busy_from_lsu && busy[head] && Q1[head] == `ROB_RESET && Q2[head] == `ROB_RESET && !react_halt) begin // 可直接用issue_signal替换
+                if (op_enum[head] >= `OP_ENUM_LB && op_enum[head] <= `OP_ENUM_LHU) begin // load
+                    if (V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) begin
                         enable_to_lsu <= `TRUE;
-                        read_write_flag_to_lsu <= `WRITE_SIT;
+                        read_write_flag_to_lsu <= `READ_SIT;
                         op_enum_to_lsu <= op_enum[head];
                         object_address_to_lsu <= V1[head]+imm[head];
-                        data_to_lsu <= V2[head];
                         rob_id_to_cdb <= rob_id[head];
                         busy[head] <= `FALSE;
                         rob_id[head] <= `ROB_RESET;
                         committed[head] <= `FALSE;
                         head <= (head == `LSB_SIZE-1) ? 0:head+1;
-                        if (commit_tail == head) begin
-                            commit_tail <= `LSB_OUT_OF_RANGE_;
-                        end
-
+                        react_halt <= `TRUE;
 
                         dbg_executed <= `TRUE;
-                    end else begin
-                        enable_to_lsu <= `FALSE;
-
-
-                        dbg_executed <= `FALSE;
                     end
-                end
-                else begin
+                end else if (op_enum[head] >= `OP_ENUM_SB && op_enum[head] <= `OP_ENUM_SW && committed[head]) begin // store
+                    enable_to_lsu <= `TRUE;
+                    read_write_flag_to_lsu <= `WRITE_SIT;
+                    op_enum_to_lsu <= op_enum[head];
+                    object_address_to_lsu <= V1[head]+imm[head];
+                    data_to_lsu <= V2[head];
+                    rob_id_to_cdb <= rob_id[head];
+                    busy[head] <= `FALSE;
+                    rob_id[head] <= `ROB_RESET;
+                    committed[head] <= `FALSE;
+                    head <= (head == `LSB_SIZE-1) ? 0:head+1;
+                    if (commit_tail == head) begin
+                        commit_tail <= `LSB_OUT_OF_RANGE_;
+                    end
+                    react_halt <= `TRUE;
+
+                    dbg_executed <= `TRUE;
+                end else begin
                     enable_to_lsu <= `FALSE;
 
 
                     dbg_executed <= `FALSE;
                 end
-                // react to commit
-                if (commit_flag_from_rob) begin
-                    for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                        if (busy[i] && rob_id[i] == rob_id_from_rob && !committed[i]) begin
-                            committed[i] <= `TRUE;
-                            if (op_enum[i] >= `OP_ENUM_SB) begin
-                                commit_tail <= i;
-                            end
+            end
+            else begin
+                enable_to_lsu <= `FALSE;
+
+
+                dbg_executed <= `FALSE;
+            end
+            // react to commit
+            if (commit_flag_from_rob) begin
+                for (i = 0; i < `LSB_SIZE;i = i+1) begin
+                    if (busy[i] && rob_id[i] == rob_id_from_rob && !committed[i]) begin
+                        committed[i] <= `TRUE;
+                        if (op_enum[i] >= `OP_ENUM_SB) begin
+                            commit_tail <= i;
                         end
                     end
-                end
-
-                // update for new result
-                if (enable_from_alu) begin
-                    for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                        if (Q1[i] == rob_id_from_rs) begin
-                            V1[i] <= result_from_alu;
-                            Q1[i] <= `ROB_RESET;
-                        end
-                        if (Q2[i] == rob_id_from_rs) begin
-                            V2[i] <= result_from_alu;
-                            Q2[i] <= `ROB_RESET;
-                        end
-                    end
-                end
-                if (enable_from_lsu) begin
-                    for (i = 0; i < `LSB_SIZE;i = i+1) begin
-                        if (Q1[i] == rob_id_from_lsb) begin
-                            V1[i] <= result_from_lsu;
-                            Q1[i] <= `ROB_RESET;
-                        end
-                        if (Q2[i] == rob_id_from_lsb) begin
-                            V2[i] <= result_from_lsu;
-                            Q2[i] <= `ROB_RESET;
-                        end
-                    end
-                end
-                // insert new inst
-                if (enable_from_dispatcher) begin
-                    busy[tail] <= `TRUE;
-                    op_enum[tail] <= op_enum_from_dispatcher;
-                    V1[tail] <= V1_from_dispatcher;
-                    V2[tail] <= V2_from_dispatcher;
-                    imm[tail] <= imm_from_dispatcher;
-                    Q1[tail] <= Q1_from_dispatcher;
-                    Q2[tail] <= Q2_from_dispatcher;
-                    rob_id[tail] <= rob_id_from_dispatcher;
-                    committed[tail] <= `FALSE;
-                    tail <= (tail == `LSB_SIZE-1) ? 0:tail+1;
-
-
-                    dbg_inserted <= `TRUE;
-                end
-                else begin
-
-                    dbg_inserted <= `FALSE;
                 end
             end
-        end
-        else begin
 
+            // update for new result
+            if (enable_from_alu) begin
+                for (i = 0; i < `LSB_SIZE;i = i+1) begin
+                    if (Q1[i] == rob_id_from_rs) begin
+                        V1[i] <= result_from_alu;
+                        Q1[i] <= `ROB_RESET;
+                    end
+                    if (Q2[i] == rob_id_from_rs) begin
+                        V2[i] <= result_from_alu;
+                        Q2[i] <= `ROB_RESET;
+                    end
+                end
+            end
+            if (enable_from_lsu) begin
+                for (i = 0; i < `LSB_SIZE;i = i+1) begin
+                    if (Q1[i] == rob_id_from_lsb) begin
+                        V1[i] <= result_from_lsu;
+                        Q1[i] <= `ROB_RESET;
+                    end
+                    if (Q2[i] == rob_id_from_lsb) begin
+                        V2[i] <= result_from_lsu;
+                        Q2[i] <= `ROB_RESET;
+                    end
+                end
+            end
+            // insert new inst
+            if (enable_from_dispatcher) begin
+                busy[tail] <= `TRUE;
+                op_enum[tail] <= op_enum_from_dispatcher;
+                V1[tail] <= V1_from_dispatcher;
+                V2[tail] <= V2_from_dispatcher;
+                imm[tail] <= imm_from_dispatcher;
+                Q1[tail] <= Q1_from_dispatcher;
+                Q2[tail] <= Q2_from_dispatcher;
+                rob_id[tail] <= rob_id_from_dispatcher;
+                committed[tail] <= `FALSE;
+                tail <= (tail == `LSB_SIZE-1) ? 0:tail+1;
+
+
+                dbg_inserted <= `TRUE;
+            end
+            else begin
+
+                dbg_inserted <= `FALSE;
+            end
         end
     end
 

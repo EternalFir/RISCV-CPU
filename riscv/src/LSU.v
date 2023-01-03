@@ -35,19 +35,38 @@ module LSU(
     assign read_write_flag_to_memcont = read_write_falg_from_lsb;
     assign address_to_memcont = object_address_from_lsb;
 
+    reg dbg_visited_object_ram;
+    reg dbg_is_write;
+
 
     always @(posedge clk_in) begin
         if (rst_in) begin
             enable_to_memcont <= `FALSE;
-            end_to_lsb <= `FALSE ;
-            busy_to_lsb<=`FALSE ;
+            end_to_lsb <= `FALSE;
+            busy_to_lsb <= `FALSE;
             enable_to_cdb <= `FALSE;
+
+
+            dbg_visited_object_ram <= `FALSE;
+            dbg_is_write <= `FALSE;
         end
         else if (rdy_in) begin
-            enable_to_cdb<=`FALSE ;
-            if(enable_from_lsb && !busy_to_lsb)begin // begin
-                busy_to_lsb<=`TRUE ;
-                enable_to_memcont<=`TRUE ;
+
+            if (object_address_from_lsb == 32'h0001ffec) begin
+                dbg_visited_object_ram <= `TRUE;
+                if (read_write_falg_from_lsb == `WRITE_SIT)
+                    dbg_is_write <= `TRUE;
+                else
+                    dbg_is_write <= `FALSE;
+            end else begin
+                dbg_visited_object_ram<=`FALSE ;
+            end
+
+
+            enable_to_cdb <= `FALSE;
+            if (enable_from_lsb && !busy_to_lsb) begin // begin
+                busy_to_lsb <= `TRUE;
+                enable_to_memcont <= `TRUE;
                 case (op_enum_from_lsb)
                     `OP_ENUM_LB : begin
                 end
@@ -74,9 +93,10 @@ module LSU(
                 end
                 endcase
             end
-            if( end_from_memcont &&enable_to_memcont)begin // finish
-                enable_to_memcont<=`FALSE ;
-                busy_to_lsb<=`FALSE ;
+            if (end_from_memcont && enable_to_memcont) begin // finish
+                enable_to_memcont <= `FALSE;
+                busy_to_lsb <= `FALSE;
+                end_to_lsb <= `TRUE;
                 case (op_enum_from_lsb)
                     `OP_ENUM_LB : begin
                     data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
@@ -113,6 +133,8 @@ module LSU(
                     enable_to_cdb <= `FALSE;
                 end
                 endcase
+            end else begin
+                end_to_lsb <= `FALSE;
             end
             // if (enable_from_lsb) begin
             //     if (end_to_lsb) begin

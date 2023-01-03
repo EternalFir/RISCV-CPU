@@ -53,6 +53,7 @@ module cpu(
     wire is_load_flag_from_dispatcher_to_rob;
     wire is_store_flag_from_dispatcher_to_rob;
     wire is_jump_from_dispatcher_to_rob;
+    wire is_jalr_from_dispatcher_to_rob;
     wire if_jump_predicted_from_dispatcher_to_rob;
     wire[`ADDR_TYPE ] inst_pos_from_dispatcher_to_rob;
     wire[`ADDR_TYPE ] rollback_pos_from_dispatcher_to_rob;
@@ -75,6 +76,7 @@ module cpu(
 
     // connection between reorder buffer and fetcher
     wire[`ADDR_TYPE ] target_pc_pos_from_rob_to_fetcher;
+    wire is_jalr_commit_from_rob_to_fetcher;
 
     // rob broadcast to cdb
     wire rollback_flag_from_rob_to_cdb;
@@ -103,6 +105,7 @@ module cpu(
     // connection between fetcher and predictor
     wire[`ADDR_TYPE ] imm_from_predictor_to_fetcher;
     wire jump_predict_flag_from_predictor_to_fetcher;
+    wire is_jalr_inst_from_predictor_to_fetcher;
     wire[`ADDR_TYPE ] pc_from_fetcher_to_predictor;
     wire[`INST_TYPE ] inst_from_fetcher_to_predictor;
 
@@ -184,7 +187,8 @@ module cpu(
     // global full
     wire global_full = (is_full_from_rs_to_dispatcher || full_flag_from_lsb_to_dispatcher || full_from_rob_to_cdb);
 
-
+    // dbg
+    wire [`ADDR_TYPE ]dbg_commit_pos_from_rob_to_register;
 // modules:
 
     ReorderBuffer reorderBuffer(
@@ -204,6 +208,7 @@ module cpu(
         .is_load_flag_from_dispatcher(is_load_flag_from_dispatcher_to_rob),
         .is_store_flag_from_dispatcher(is_store_flag_from_dispatcher_to_rob),
         .is_jump_from_dispatcher(is_jump_from_dispatcher_to_rob),
+        .is_jalr_from_dispatcher(is_jalr_from_dispatcher_to_rob),
         .if_jump_predicted_from_dispatcher(if_jump_predicted_from_dispatcher_to_rob),
         .inst_pos_from_dispatcher(inst_pos_from_dispatcher_to_rob),
         .rollback_pos_from_dispatcher(rollback_pos_from_dispatcher_to_rob),
@@ -226,6 +231,7 @@ module cpu(
 
         // connect with fetcher
         .target_pc_pos_to_fetcher(target_pc_pos_from_rob_to_fetcher),
+        .is_jalr_commit_to_fetcher(is_jalr_commit_from_rob_to_fetcher),
 
         // info fom cdb
         .enable_from_alu(enable_from_alu_to_cdb),
@@ -240,7 +246,10 @@ module cpu(
         // broadcast
         .rollback_flag(rollback_flag_from_rob_to_cdb),
         .commit_flag(commit_flag_from_rob_to_cdb),
-        .full_to_cdb(full_from_rob_to_cdb)
+        .full_to_cdb(full_from_rob_to_cdb),
+
+        // dbg
+        .dbg_commit_pos_to_register(dbg_commit_pos_from_rob_to_register)
     );
 
     MemoryControl memoryControl(
@@ -291,6 +300,7 @@ module cpu(
         // connect with predictor
         .imm_from_predictor(imm_from_predictor_to_fetcher),
         .jump_predict_flag_from_predictor(jump_predict_flag_from_predictor_to_fetcher),
+        .is_jalr_inst_from_predictor(is_jalr_inst_from_predictor_to_fetcher),
         .pc_to_predictor(pc_from_fetcher_to_predictor),
         .inst_to_predictor(inst_from_fetcher_to_predictor),
 
@@ -303,6 +313,7 @@ module cpu(
 
         // connect with reorder buffer
         .targer_pc_pos_from_rob(target_pc_pos_from_rob_to_fetcher),
+        .is_jalr_commit_from_rob(is_jalr_commit_from_rob_to_fetcher),
 
         // info from cdb
         .rollback_flag_from_rob(rollback_flag_from_rob_to_cdb),
@@ -334,6 +345,7 @@ module cpu(
         .is_load_to_rob(is_load_flag_from_dispatcher_to_rob),
         .is_store_to_rob(is_store_flag_from_dispatcher_to_rob),
         .is_jump_to_rob(is_jump_from_dispatcher_to_rob),
+        .is_jalr_to_rob(is_jalr_from_dispatcher_to_rob),
         .if_jump_predicted_to_rob(if_jump_predicted_from_dispatcher_to_rob),
         .inst_pos_to_rob(inst_pos_from_dispatcher_to_rob),
         .rollback_pos_to_rob(rollback_pos_from_dispatcher_to_rob),
@@ -394,6 +406,7 @@ module cpu(
         .inst_from_fetcher(inst_from_fetcher_to_predictor),
         .imm_to_fetcher(imm_from_predictor_to_fetcher),
         .jump_predict_flag_to_fetcher(jump_predict_flag_from_predictor_to_fetcher),
+        .is_jalr_inst_to_fetcher(is_jalr_inst_from_predictor_to_fetcher),
 
         // connect with reorder buffer
         .enable_from_reorderbuffer(enable_from_rob_to_predictor),
@@ -556,7 +569,10 @@ module cpu(
 
         // info from cdb
         .commit_flag_from_cdb(commit_flag_from_rob_to_cdb),
-        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb)
+        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb),
+
+        // dbg
+        .dbg_commit_pos_from_rob(dbg_commit_pos_from_rob_to_register)
     );
 
 endmodule

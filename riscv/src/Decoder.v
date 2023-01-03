@@ -59,8 +59,6 @@ module Decoder(
                 `OPCODE_JALR: begin
                 op_enum = `OP_ENUM_JALR;
                 is_jump = `TRUE;
-                // jalr_cnt = jalr_cnt + 1;
-                // if (jalr_cnt % 1000 == 0) $display("jalr: ", jalr_cnt);
             end
             `OPCODE_LOAD: begin
                 case (inst_in[`FUNC3_RANGE])

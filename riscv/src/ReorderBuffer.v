@@ -19,6 +19,7 @@ module ReorderBuffer(
     input wire is_load_flag_from_dispatcher,
     input wire is_store_flag_from_dispatcher,
     input wire is_jump_from_dispatcher,
+    input wire is_jalr_from_dispatcher,
     input wire if_jump_predicted_from_dispatcher,
     input wire[`ADDR_TYPE ] inst_pos_from_dispatcher,
     input wire[`ADDR_TYPE ] rollback_pos_from_dispatcher,
@@ -43,6 +44,7 @@ module ReorderBuffer(
 
     // connect with fetcher
     output reg[`ADDR_TYPE ] target_pc_pos_to_fetcher,
+    output reg is_jalr_commit_to_fetcher,
 
     // info from cdb broadcast
     input wire enable_from_alu,
@@ -58,7 +60,10 @@ module ReorderBuffer(
     // broadcast 
     output reg rollback_flag,
     output reg commit_flag,
-    output wire full_to_cdb
+    output wire full_to_cdb,
+
+    // dbg
+    output reg[`ADDR_TYPE ] dbg_commit_pos_to_register
 
 );
 
@@ -75,14 +80,18 @@ module ReorderBuffer(
     reg is_jump_inst[`ROB_SIZE -1:0];
     reg is_load_inst[`ROB_SIZE -1:0];
     reg is_store_inst[`ROB_SIZE -1:0];
+    reg is_jalr_inst[`ROB_SIZE -1:0];
     reg is_io_inst[`ROB_SIZE -1:0];
 
     reg[`ROB_TYPE ] head;
     reg[`ROB_TYPE ] tail;
-    reg[`ROB_TYPE ] element_num;
+    reg [`ROB_CNT_TYPE ] element_num;
 
     wire insert_signal = enable_from_dispatcher;
     wire commit_signal = busy[head] && (is_ready[head] || is_store_inst[head]);
+
+    wire[`ROB_TYPE ] rob_id_rs_1 = (rob_id_from_rs == 5'h00) ? 5'h1f:rob_id_from_rs-1;
+    wire[`ROB_TYPE ] rob_id_lsb_1 = (rob_id_from_lsb == 5'h00) ? 5'h1f:rob_id_from_lsb-1;
 
     integer i;
 
@@ -94,6 +103,15 @@ module ReorderBuffer(
     assign if_Q2_rdy_to_dispatcher = (Q2_from_dispatcher == `ROB_RESET) ?`FALSE :is_ready[Q2_from_dispatcher-1];
     assign Q1_data_to_dispatcher = (Q1_from_dispatcher == `ROB_RESET) ? `DATA_RESET :data[Q1_from_dispatcher-1];
     assign Q2_data_to_dispatcher = (Q2_from_dispatcher == `ROB_RESET) ? `DATA_RESET :data[Q2_from_dispatcher-1];
+
+    reg[`ADDR_TYPE ] dbg_commit_inst_pos;
+    reg[`DATA_TYPE ] dbg_commit_count = 1;
+    reg[`ROB_TYPE ] dbg_rob_ready_now;
+    reg[`ROB_TYPE ] dbg_rob_rdy_now_2;
+    reg dbg_commit_1f_true;
+    reg dbg_commit_1f_false;
+    reg[`ROB_TYPE ] dbg_data_test = 5'h00-1;
+    wire dbg_busy_1f = busy[5'h1f];
 
 
     always @(posedge clk_in) begin
@@ -111,14 +129,25 @@ module ReorderBuffer(
                 is_jump_inst[i] <= `FALSE;
                 is_load_inst[i] <= `FALSE;
                 is_store_inst[i] <= `FALSE;
+                is_jalr_inst[i] <= `FALSE;
                 is_io_inst[i] <= `FALSE;
             end
             head <= `ROB_RESET;
             tail <= `ROB_RESET;
-            element_num <= `ROB_RESET;
+            element_num <= `ROB_CNT_RESET;
             enable_to_predictor <= `FALSE;
             rollback_flag <= `FALSE;
             commit_flag <= `FALSE;
+            target_pc_pos_to_fetcher <= `ADDR_RESET;
+
+
+            dbg_commit_inst_pos <= `ADDR_RESET;
+            dbg_commit_pos_to_register <= `ADDR_RESET;
+            dbg_rob_ready_now <= `ROB_RESET;
+            dbg_rob_rdy_now_2 <= `ROB_RESET;
+            dbg_commit_1f_true <= `FALSE;
+            dbg_commit_1f_false <= `FALSE;
+            // dbg_commit_count <= `DATA_RESET;
         end else if (rdy_in) begin
             // calcu the element number
             if ((insert_signal && commit_signal) || (!insert_signal && !commit_signal)) begin
@@ -130,17 +159,74 @@ module ReorderBuffer(
             end
             // update with cdb info
             // from rs
-            if (busy[rob_id_from_rs-1] && enable_from_alu) begin
-                is_ready[rob_id_from_rs-1] <= `TRUE;
-                data[rob_id_from_rs-1] <= result_from_alu;
-                target_pos[rob_id_from_rs-1] <= target_pos_from_alu;
-                if_jump_result[rob_id_from_rs-1] <= jump_flag_from_alu;
+            if ((busy[rob_id_rs_1] == `TRUE) && (enable_from_alu == `TRUE)) begin
+                is_ready[rob_id_rs_1] <= `TRUE;
+                data[rob_id_rs_1] <= result_from_alu;
+                target_pos[rob_id_rs_1] <= target_pos_from_alu;
+                if_jump_result[rob_id_rs_1] <= jump_flag_from_alu;
+
+
+                dbg_rob_ready_now <= rob_id_from_rs-1;
+                dbg_rob_rdy_now_2 <= (rob_id_from_rs == 5'h00) ? 5'h1f:rob_id_from_rs-1;
+
+                if (rob_id_from_rs == 5'h00) begin
+                    dbg_commit_1f_true <= `TRUE;
+                end else begin
+                    dbg_commit_1f_true <= `FALSE;
+                end
+            end else begin
+                // dbg_commit_1f <= `FALSE;
+                dbg_rob_ready_now <= rob_id_from_rs-1;
+                if (rob_id_from_rs == 5'h00) begin
+                    dbg_commit_1f_false <= `TRUE;
+                end else begin
+                    dbg_commit_1f_false <= `FALSE;
+                end
+
             end
+
+            // if ((busy[rob_id_from_rs-1] == `TRUE) && (enable_from_alu == `TRUE)) begin
+            //     is_ready[rob_id_from_rs-1] <= `TRUE;
+            //     data[rob_id_from_rs-1] <= result_from_alu;
+            //     target_pos[rob_id_from_rs-1] <= target_pos_from_alu;
+            //     if_jump_result[rob_id_from_rs-1] <= jump_flag_from_alu;
+            //
+            //
+            //     dbg_rob_ready_now <= rob_id_from_rs-1;
+            //     dbg_rob_rdy_now_2 <= (rob_id_from_rs == 5'h00) ? 5'h1f:rob_id_from_rs-1;
+            //
+            //     if (rob_id_from_rs == 5'h00) begin
+            //         dbg_commit_1f_true <= `TRUE;
+            //     end else begin
+            //         dbg_commit_1f_true <= `FALSE;
+            //     end
+            // end else begin
+            //     // dbg_commit_1f <= `FALSE;
+            //     dbg_rob_ready_now <= rob_id_from_rs-1;
+            //     if (rob_id_from_rs == 5'h00) begin
+            //         dbg_commit_1f_false <= `TRUE;
+            //     end else begin
+            //         dbg_commit_1f_false <= `FALSE;
+            //     end
+            //
+            // end
+
+
             // from lsb
-            if (busy[rob_id_from_lsb-1] && enable_from_lsu) begin
-                is_ready[rob_id_from_lsb-1] <= `TRUE;
-                data[rob_id_from_lsb-1] <= result_from_lsu;
+            if (busy[rob_id_lsb_1] && enable_from_lsu) begin
+                is_ready[rob_id_lsb_1] <= `TRUE;
+                data[rob_id_lsb_1] <= result_from_lsu;
+
+
+                dbg_rob_ready_now <= rob_id_from_lsb-1;
             end
+            // if (busy[rob_id_from_lsb-1] && enable_from_lsu) begin
+            //     is_ready[rob_id_from_lsb-1] <= `TRUE;
+            //     data[rob_id_from_lsb-1] <= result_from_lsu;
+            //
+            //
+            //     dbg_rob_ready_now <= rob_id_from_lsb-1;
+            // end
             // insert
             if (enable_from_dispatcher) begin
                 busy[tail] <= `TRUE;
@@ -155,6 +241,7 @@ module ReorderBuffer(
                 is_jump_inst[tail] <= is_jump_from_dispatcher;
                 is_load_inst[tail] <= is_load_flag_from_dispatcher;
                 is_store_inst[tail] <= is_store_flag_from_dispatcher;
+                is_jalr_inst[tail] <= is_jalr_from_dispatcher;
                 is_io_inst[tail] <= `FALSE;
                 tail <= ((tail == `ROB_SIZE-1) ? 0:tail+1);
             end
@@ -166,6 +253,16 @@ module ReorderBuffer(
                 Q_to_register <= head+1;
                 rob_id_to_lsb <= head+1;
                 head <= ((head == `ROB_SIZE-1) ? 0:head+1);
+
+
+                dbg_commit_pos_to_register <= inst_pos[head];
+                // if(dbg_commit_count<=32'h70)begin
+                //     $display("commiting, commit_cnt = %h, pc = %h",dbg_commit_count, inst_pos[head]);
+                // end
+
+                dbg_commit_inst_pos <= inst_pos[head];
+                dbg_commit_count <= dbg_commit_count+1;
+
                 if (is_jump_inst[head]) begin
                     enable_to_predictor <= `TRUE;
                     inst_pos_to_predictor <= inst_pos[head];
@@ -179,6 +276,11 @@ module ReorderBuffer(
                 end else begin
                     enable_to_predictor <= `FALSE;
                     rollback_flag <= `FALSE;
+                end
+                if (is_jalr_inst[head]) begin
+                    is_jalr_commit_to_fetcher <= `TRUE;
+                end else begin
+                    is_jalr_commit_to_fetcher <= `FALSE;
                 end
                 busy[head] <= `FALSE;
                 is_ready[head] <= `FALSE;
@@ -197,6 +299,7 @@ module ReorderBuffer(
                 commit_flag <= `FALSE;
                 enable_to_predictor <= `FALSE;
                 rollback_flag <= `FALSE;
+                is_jalr_commit_to_fetcher <= `FALSE;
             end
             if (io_rob_id_from_lsb != `ROB_RESET && busy[io_rob_id_from_lsb-1]) begin
                 is_io_inst[io_rob_id_from_lsb-1] <= `TRUE;
