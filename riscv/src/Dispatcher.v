@@ -21,10 +21,10 @@ module Dispatcher(
     input wire[`DATA_TYPE ] data1_from_rob,
     input wire if_Q2_rdy_from_rob,
     input wire[`DATA_TYPE ] data2_from_rob,
-    output wire[`ROB_TYPE ] Q1_to_rob,
-    output wire[`ROB_TYPE ] Q2_to_rob,
+    output wire[`ROB_ID_TYPE ] Q1_to_rob,
+    output wire[`ROB_ID_TYPE ] Q2_to_rob,
     // about inst add
-    input wire[`ROB_TYPE ] rob_id_from_rob,
+    input wire[`ROB_ID_TYPE ] rob_id_from_rob,
     output reg enable_to_rob,
     output reg[`REG_TYPE ] rd_to_rob,
     output reg is_load_to_rob,
@@ -39,14 +39,14 @@ module Dispatcher(
     // about data update
     output reg enable_to_register,
     output reg[`REG_TYPE ] reg_id_to_register,
-    output wire[`ROB_TYPE ] rob_id_to_register,
+    output wire[`ROB_ID_TYPE ] rob_id_to_register,
     // about data query
     output wire[`REG_TYPE ] rs1_to_register,
     output wire[`REG_TYPE ] rs2_to_register,
     input wire[`DATA_TYPE ] V1_from_register,
     input wire[`DATA_TYPE ] V2_from_register,
-    input wire[`ROB_TYPE ] Q1_from_register,
-    input wire[`ROB_TYPE ] Q2_from_register,
+    input wire[`ROB_ID_TYPE ] Q1_from_register,
+    input wire[`ROB_ID_TYPE ] Q2_from_register,
 
 
     // connect with reservation station
@@ -55,10 +55,10 @@ module Dispatcher(
     output reg[`DATA_TYPE ] V1_to_rs,
     output reg[`DATA_TYPE ] V2_to_rs,
     output reg[`DATA_TYPE ] imm_to_rs,
-    output reg[`ROB_TYPE ] Q1_to_rs,
-    output reg[`ROB_TYPE ] Q2_to_rs,
+    output reg[`ROB_ID_TYPE ] Q1_to_rs,
+    output reg[`ROB_ID_TYPE ] Q2_to_rs,
     output reg[`ADDR_TYPE ] inst_pos_to_rs,
-    output wire[`ROB_TYPE ] rob_id_to_rs,
+    output wire[`ROB_ID_TYPE ] rob_id_to_rs,
     input wire is_full_from_rs,
 
     // connect with load store buffer
@@ -67,17 +67,18 @@ module Dispatcher(
     output reg[`DATA_TYPE ] V1_to_lsb,
     output reg[`DATA_TYPE ] V2_to_lsb,
     output reg[`DATA_TYPE ] imm_to_lsb,
-    output reg[`ROB_TYPE ] Q1_to_lsb,
-    output reg[`ROB_TYPE ] Q2_to_lsb,
-    output wire[`ROB_TYPE ] rob_id_to_lsb,
+    output reg[`ROB_ID_TYPE ] Q1_to_lsb,
+    output reg[`ROB_ID_TYPE ] Q2_to_lsb,
+    output reg [`ADDR_TYPE ] inst_pos_to_lsb,
+    output wire[`ROB_ID_TYPE ] rob_id_to_lsb,
     input wire full_flag_from_lsb,
 
     // info from cdb broadcast
     input wire enable_from_alu,
-    input wire[`ROB_TYPE ] rob_id_from_rs,
+    input wire[`ROB_ID_TYPE ] rob_id_from_rs,
     input wire[`DATA_TYPE ] result_from_alu,
     input wire enable_from_lsu,
-    input wire[`ROB_TYPE ] rob_id_from_lsb,
+    input wire[`ROB_ID_TYPE ] rob_id_from_lsb,
     input wire[`DATA_TYPE ] result_from_lsu,
 
     // connect with rob
@@ -107,8 +108,8 @@ module Dispatcher(
         .is_store(is_store_from_decoder)
     );
 
-    wire[`ROB_TYPE ] Q1_insert = (enable_from_alu && Q1_from_register == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q1_from_register == rob_id_from_lsb) ?`ROB_RESET :(if_Q1_rdy_from_rob ? `ROB_RESET : Q1_from_register));
-    wire[`ROB_TYPE ] Q2_insert = (enable_from_alu && Q2_from_register == rob_id_from_rs) ? `ROB_RESET :((enable_from_lsu && Q2_from_register == rob_id_from_lsb) ?`ROB_RESET :(if_Q2_rdy_from_rob ?`ROB_RESET : Q2_from_register));
+    wire[`ROB_ID_TYPE ] Q1_insert = (enable_from_alu && Q1_from_register == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q1_from_register == rob_id_from_lsb) ?`ROB_ID_RESET :(if_Q1_rdy_from_rob ? `ROB_ID_RESET : Q1_from_register));
+    wire[`ROB_ID_TYPE ] Q2_insert = (enable_from_alu && Q2_from_register == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q2_from_register == rob_id_from_lsb) ?`ROB_ID_RESET :(if_Q2_rdy_from_rob ?`ROB_ID_RESET : Q2_from_register));
     wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_register == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q1_from_register == rob_id_from_lsb) ? result_from_lsu:(if_Q1_rdy_from_rob ? data1_from_rob : V1_from_register));
     wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_register == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q2_from_register == rob_id_from_lsb) ? result_from_lsu:(if_Q2_rdy_from_rob ? data2_from_rob : V2_from_register));
 
@@ -172,6 +173,7 @@ module Dispatcher(
             imm_to_lsb <= imm_from_decoder;
             V1_to_lsb <= V1_insert;
             V2_to_lsb <= V2_insert;
+            inst_pos_to_lsb <= inst_pos_from_fetcher;
         end
     end
 

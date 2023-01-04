@@ -42,8 +42,8 @@ module cpu(
 // - 0x30004 write: indicates program stop (will output '\0' through uart tx)
 
     // connection between reorder buffer and dispatcher
-    wire[`ROB_TYPE ] Q1_from_dispatcher_to_rob;
-    wire[`ROB_TYPE ] Q2_from_dispatcher_to_rob;
+    wire[`ROB_ID_TYPE ] Q1_from_dispatcher_to_rob;
+    wire[`ROB_ID_TYPE ] Q2_from_dispatcher_to_rob;
     wire if_Q1_rdy_from_rob_to_dispatcher;
     wire[`DATA_TYPE ] Q1_data_from_rob_to_dispatcher;
     wire if_Q2_rdy_from_rob_to_dispatcher;
@@ -57,17 +57,17 @@ module cpu(
     wire if_jump_predicted_from_dispatcher_to_rob;
     wire[`ADDR_TYPE ] inst_pos_from_dispatcher_to_rob;
     wire[`ADDR_TYPE ] rollback_pos_from_dispatcher_to_rob;
-    wire[`ROB_TYPE ] rob_id_from_rob_to_dispatcher;
+    wire[`ROB_ID_TYPE ] rob_id_from_rob_to_dispatcher;
 
     // connection between reorder buffer and load store buffer
-    wire[`ROB_TYPE ] io_rob_id_from_lsb_to_rob;
-    wire[`ROB_TYPE ] rob_id_from_rob_to_lsb;
-    wire[`ROB_TYPE ] head_io_rob_id_from_rob_to_lsb;
+    wire[`ROB_ID_TYPE ] io_rob_id_from_lsb_to_rob;
+    wire[`ROB_ID_TYPE ] rob_id_from_rob_to_lsb;
+    wire[`ROB_ID_TYPE ] head_io_rob_id_from_rob_to_lsb;
 
     // connection between reorder buffer and register
     wire[`REG_TYPE ] rd_from_rob_to_register;
     wire[`DATA_TYPE ] V_from_rob_to_register;
-    wire[`ROB_TYPE ] Q_from_rob_to_register;
+    wire[`ROB_ID_TYPE ] Q_from_rob_to_register;
 
     // connection between reorder buffer and predictor
     wire enable_from_rob_to_predictor;
@@ -119,13 +119,13 @@ module cpu(
     // connection between dispatcher and register
     wire enable_from_dispatcher_to_register;
     wire[`REG_TYPE ] reg_id_from_dispatcher_to_register;
-    wire[`ROB_TYPE ] rob_id_from_dispatcher_to_register;
+    wire[`ROB_ID_TYPE ] rob_id_from_dispatcher_to_register;
     wire[`REG_TYPE ] rs1_from_dispatcher_to_register;
     wire[`REG_TYPE ] rs2_from_dispatcher_to_register;
     wire[`DATA_TYPE ] V1_from_register_to_dispatcher;
     wire[`DATA_TYPE ] V2_from_register_to_dispatcher;
-    wire[`ROB_TYPE ] Q1_from_register_to_dispatcher;
-    wire[`ROB_TYPE ] Q2_from_register_to_dispatcher;
+    wire[`ROB_ID_TYPE ] Q1_from_register_to_dispatcher;
+    wire[`ROB_ID_TYPE ] Q2_from_register_to_dispatcher;
 
     // connection between dispatcher and reservation station
     wire enable_from_dispatcher_to_rs;
@@ -133,10 +133,10 @@ module cpu(
     wire[`DATA_TYPE ] V1_from_dispatcher_to_rs;
     wire[`DATA_TYPE ] V2_from_dispatcher_to_rs;
     wire[`DATA_TYPE ] imm_from_dispatcher_to_rs;
-    wire[`ROB_TYPE ] Q1_from_dispatcher_to_rs;
-    wire[`ROB_TYPE ] Q2_from_dispatcher_to_rs;
+    wire[`ROB_ID_TYPE ] Q1_from_dispatcher_to_rs;
+    wire[`ROB_ID_TYPE ] Q2_from_dispatcher_to_rs;
     wire[`ADDR_TYPE ] inst_pos_from_dispatcher_to_rs;
-    wire[`ROB_TYPE ] rob_id_from_dispatcher_to_rs;
+    wire[`ROB_ID_TYPE ] rob_id_from_dispatcher_to_rs;
     wire is_full_from_rs_to_dispatcher;
 
     // connection between dispatcher and load store buffer
@@ -145,9 +145,10 @@ module cpu(
     wire[`DATA_TYPE ] V1_from_dispatcher_to_lsb;
     wire[`DATA_TYPE ] V2_from_dispatcher_to_lsb;
     wire[`DATA_TYPE ] imm_from_dispatcher_to_lsb;
-    wire[`ROB_TYPE ] Q1_from_dispatcher_to_lsb;
-    wire[`ROB_TYPE ] Q2_from_dispatcher_to_lsb;
-    wire[`ROB_TYPE ] rob_id_from_dispatcher_to_lsb;
+    wire[`ROB_ID_TYPE ] Q1_from_dispatcher_to_lsb;
+    wire[`ROB_ID_TYPE ] Q2_from_dispatcher_to_lsb;
+    wire[`ADDR_TYPE ] inst_pos_from_dispatcher_to_lsb;
+    wire[`ROB_ID_TYPE ] rob_id_from_dispatcher_to_lsb;
     wire full_flag_from_lsb_to_dispatcher;
 
     // connection between reservation station and alu
@@ -159,7 +160,7 @@ module cpu(
     wire busy_from_alu_to_rs;
 
     // reservation station broadcast to cdb
-    wire[`ROB_TYPE ] rob_id_enec_now_from_rs_to_cdb;
+    wire[`ROB_ID_TYPE ] rob_id_enec_now_from_rs_to_cdb;
 
     // alu broadcast to cdb
     wire enable_from_alu_to_cdb;
@@ -178,7 +179,7 @@ module cpu(
     wire[`DATA_TYPE ] data_from_lsb_to_lsu;
 
     // lsb broadcast to cdb
-    wire[`ROB_TYPE ] rob_id_from_lsb_to_cdb;
+    wire[`ROB_ID_TYPE ] rob_id_from_lsb_to_cdb;
 
     // lsu broadcast to cdb
     wire enable_from_lsu_to_cdb;
@@ -381,6 +382,7 @@ module cpu(
         .imm_to_lsb(imm_from_dispatcher_to_lsb),
         .Q1_to_lsb(Q1_from_dispatcher_to_lsb),
         .Q2_to_lsb(Q2_from_dispatcher_to_lsb),
+        .inst_pos_to_lsb(inst_pos_from_dispatcher_to_lsb),
         .rob_id_to_lsb(rob_id_from_dispatcher_to_lsb),
         .full_flag_from_lsb(full_flag_from_lsb_to_dispatcher),
 
@@ -482,6 +484,7 @@ module cpu(
         .imm_from_dispatcher(imm_from_dispatcher_to_lsb),
         .Q1_from_dispatcher(Q1_from_dispatcher_to_lsb),
         .Q2_from_dispatcher(Q2_from_dispatcher_to_lsb),
+        .inst_pos_from_dispatcher(inst_pos_from_dispatcher_to_lsb),
         .rob_id_from_dispatcher(rob_id_from_dispatcher_to_lsb),
         .full_flag_to_dispatcher(full_flag_from_lsb_to_dispatcher),
 
