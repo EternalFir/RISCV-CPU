@@ -45,6 +45,9 @@ module MemoryControl(
     reg is_data_before;
 
     reg[`INST_CNT_TYPE ] inst_read_cnt;
+    reg is_io_inst;
+
+    reg dbg_io_port_visited;
 
 
     always @(*) begin
@@ -52,6 +55,9 @@ module MemoryControl(
             inst_read_cnt <= `INST_CNT_RESET;
             inst_to_fetcher <= `INST_RESET;
             end_to_fetcher <= `FALSE;
+            is_io_inst <= `FALSE;
+
+            dbg_io_port_visited <= `FALSE;
         end
     end
 
@@ -73,6 +79,10 @@ module MemoryControl(
             is_with_fetcher <= `FALSE;
             is_inst_before <= `FALSE;
             is_data_before <= `FALSE;
+            is_io_inst <= `FALSE;
+
+
+            dbg_io_port_visited <= `FALSE;
         end
         else if (rdy_in) begin
             if (one_inst_going_to_finish) begin
@@ -85,6 +95,9 @@ module MemoryControl(
             // end_to_lsu <= `TRUE;
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
+
+            dbg_io_port_visited <= `FALSE;
+
             if (aviliable && enable_from_lsu) begin
                 aviliable <= `FALSE;
                 is_with_lsu <= `TRUE;
@@ -94,6 +107,13 @@ module MemoryControl(
                 is_data_before <= `TRUE;
                 is_inst_before <= `FALSE;
                 read_write_flag_to_ram <= read_wirte_flag_from_lsu;
+
+
+                if (address_from_lsu == `RAM_IO_PORT) begin
+                    dbg_io_port_visited <= `TRUE;
+                    is_io_inst <= `TRUE;
+                    data_to_ram <= data_from_lsu[7:0];
+                end
             end
             if (is_with_lsu) begin
                 if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
@@ -114,26 +134,32 @@ module MemoryControl(
                 end
                 else begin // for write
                     // read_write_flag_to_ram <= `WRITE_SIT;
-                    case (rw_block_ram)
-                        2'h0: data_to_ram <= data_from_lsu[7:0];
-                        2'h1: data_to_ram <= data_from_lsu[15:8];
-                        2'h2: data_to_ram <= data_from_lsu[23:16];
-                        2'h3: data_to_ram <= data_from_lsu[31:24];
-                        // 3'h1: data_to_ram <= data_from_lsu[7:0];
-                        // 3'h2: data_to_ram <= data_from_lsu[15:8];
-                        // 3'h3: data_to_ram <= data_from_lsu[23:16];
-                        // 3'h4: data_to_ram <= data_from_lsu[31:24];
-                    endcase
-                    if (rw_block_ram > 0 && rw_block_ram < 4) begin
-                        address_to_ram <= address_to_ram+1;
-                    end else begin
+                    if (is_io_inst) begin
+                        data_to_ram <= data_from_lsu[7:0];
                         address_to_ram <= address_to_ram;
+                    end else begin
+                        case (rw_block_ram)
+                            2'h0: data_to_ram <= data_from_lsu[7:0];
+                            2'h1: data_to_ram <= data_from_lsu[15:8];
+                            2'h2: data_to_ram <= data_from_lsu[23:16];
+                            2'h3: data_to_ram <= data_from_lsu[31:24];
+                            // 3'h1: data_to_ram <= data_from_lsu[7:0];
+                            // 3'h2: data_to_ram <= data_from_lsu[15:8];
+                            // 3'h3: data_to_ram <= data_from_lsu[23:16];
+                            // 3'h4: data_to_ram <= data_from_lsu[31:24];
+                        endcase
+                        if (rw_block_ram > 0 && rw_block_ram < 4) begin
+                            address_to_ram <= address_to_ram+1;
+                        end else begin
+                            address_to_ram <= address_to_ram;
+                        end
                     end
                     rw_block_ram <= rw_block_ram+1;
                     if (rw_block_ram == 4) begin
                         end_to_lsu <= `TRUE;
                         // aviliable <= `TRUE;
                         is_with_lsu <= `FALSE;
+                        is_io_inst <= `FALSE;
                     end
                 end
             end
