@@ -43,11 +43,16 @@ module Register(
 
     assign V1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher) ? V_from_rob_backup:registers[rs1_from_dispatcher];
     assign V2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher) ? V_from_rob_backup:registers[rs2_from_dispatcher];
-    assign Q1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs1_from_dispatcher]));
-    assign Q2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs2_from_dispatcher]));
+    // assign Q1_to_dispatcher = (rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs1_from_dispatcher]));
+    // assign Q2_to_dispatcher = (rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs2_from_dispatcher]));
+
+    assign Q1_to_dispatcher = ((enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET && rs1_from_dispatcher == reg_id_from_dispatcher) ? rob_id_from_dispatcher:(rd_from_rob_backup == rs1_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs1_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs1_from_dispatcher])));
+    assign Q2_to_dispatcher = ((enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET && rs2_from_dispatcher == reg_id_from_dispatcher) ? rob_id_from_dispatcher:(rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs2_from_dispatcher])));
 
 
     reg[`DATA_TYPE ] dbg_commit_cnt;
+
+    wire [`ROB_ID_TYPE ] dbg_rob_register_0A=rob_register[5'h0a];
 
 
     always @(*) begin
@@ -107,7 +112,7 @@ module Register(
             if (rdy_in) begin
                 if (rollback_flag_from_cdb_backup) begin
                     for (i = 0; i < `REG_SIZE;i = i+1) begin
-                        rob_register[i] <= `ROB_RESET;
+                        rob_register[i] <= `ROB_ID_RESET;
                     end
                 end else if (reg_id_from_dispatcher_backup != `REG_RESET) begin
                     rob_register[reg_id_from_dispatcher_backup] <= rob_id_from_dispatcher_backup;
@@ -117,15 +122,17 @@ module Register(
                     if (rob_free) begin
                         rob_register[rd_from_rob_backup] <= `ROB_ID_RESET;
                     end
+                    rd_from_rob_backup<=`REG_RESET ;
+                    V_from_rob_backup<=`DATA_RESET ;
                 end
 
 
                 // if (commit_flag_from_cdb) begin
-                //     if (dbg_commit_cnt >= 32'h0 && dbg_commit_cnt <= 32'h400) begin
+                //     if (dbg_commit_cnt >= 32'h80 && dbg_commit_cnt <= 32'h100) begin
                 //         $display("commiting, commit_cnt = %h, pc = %h", dbg_commit_cnt, dbg_commit_pos_from_rob);
-                //         // for (i = 0; i < `REG_SIZE;i = i+1) begin
-                //         //     $display("reg %h : %h", i, registers[i]);
-                //         // end
+                //         for (i = 0; i < `REG_SIZE;i = i+1) begin
+                //             $display("reg %h : %h", i, registers[i]);
+                //         end
                 //     end
                 //     dbg_commit_cnt <= dbg_commit_cnt+1;
                 // end

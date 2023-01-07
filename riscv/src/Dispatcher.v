@@ -1,5 +1,5 @@
 `include "constants.v"
-`include "Decoder.v"
+// `include "Decoder.v"
 
 module Dispatcher(
     input wire clk_in,

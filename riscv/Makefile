@@ -17,8 +17,9 @@ _no_testcase_name_check:
 
 # All build result are put at testspace
 build_sim:
-	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/cpu.v $(src)/hci.v $(src)/ram.v $(src)/riscv_top.v
+	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.v
 
+#   @cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/cpu.v $(src)/hci.v $(src)/ram.v $(src)/riscv_top.v
 # 	@cd $(src) && iverilog -o $(testspace)/test $(sim)/testbench.v $(src)/common/block_ram/*.v $(src)/common/fifo/*.v $(src)/common/uart/*.v $(src)/*.vh $(src)/*.v
 
 build_sim_test: _no_testcase_name_check

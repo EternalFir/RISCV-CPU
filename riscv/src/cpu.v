@@ -3,16 +3,16 @@
 
 `include "constants.v"
 
-`include "MemoryControl.v"
-`include "Fetcher.v"
-`include "Predictor.v"
-`include "Dispatcher.v"
-`include "Register.v"
-`include "ReservationStation.v"
-`include "ALU.v"
-`include "LoadStoreBuffer.v"
-`include "LSU.v"
-`include "ReorderBuffer.v"
+// `include "MemoryControl.v"
+// `include "Fetcher.v"
+// `include "Predictor.v"
+// `include "Dispatcher.v"
+// `include "Register.v"
+// `include "ReservationStation.v"
+// `include "ALU.v"
+// `include "LoadStoreBuffer.v"
+// `include "LSU.v"
+// `include "ReorderBuffer.v"
 
 module cpu(
     input wire clk_in,            // system clock signal
