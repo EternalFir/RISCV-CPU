@@ -52,7 +52,7 @@ module LSU(
         end
         else if (rdy_in) begin
 
-            if (object_address_from_lsb == 32'h0001ffec) begin
+            if (object_address_from_lsb == 32'h00001264) begin
                 dbg_visited_object_ram <= `TRUE;
                 if (read_write_falg_from_lsb == `WRITE_SIT)
                     dbg_is_write <= `TRUE;
@@ -111,7 +111,8 @@ module LSU(
                 `OP_ENUM_LW: begin
                     data_to_lsb <= data_from_memcont;
                     enable_to_cdb <= `TRUE;
-                    result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                    // result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                    result_to_cdb<=data_from_memcont;
                 end
                 `OP_ENUM_LBU: begin
                     data_to_lsb <= `DATA_RESET +{data_from_memcont[7:0]};

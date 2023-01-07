@@ -139,10 +139,11 @@ module MemoryControl(
                         address_to_ram <= address_to_ram;
                     end else begin
                         case (rw_block_ram)
-                            2'h0: data_to_ram <= data_from_lsu[7:0];
-                            2'h1: data_to_ram <= data_from_lsu[15:8];
-                            2'h2: data_to_ram <= data_from_lsu[23:16];
-                            2'h3: data_to_ram <= data_from_lsu[31:24];
+                            3'h0: data_to_ram <= data_from_lsu[7:0];
+                            3'h1: data_to_ram <= data_from_lsu[15:8];
+                            3'h2: data_to_ram <= data_from_lsu[23:16];
+                            3'h3: data_to_ram <= data_from_lsu[31:24];
+                            3'h4: data_to_ram <= data_from_lsu[31:24];
                             // 3'h1: data_to_ram <= data_from_lsu[7:0];
                             // 3'h2: data_to_ram <= data_from_lsu[15:8];
                             // 3'h3: data_to_ram <= data_from_lsu[23:16];

@@ -55,18 +55,24 @@ module ReservationStation(
 
     wire[`RS_TYPE ] aviliable_now;
     wire[`RS_TYPE ] exec_now;
-    wire is_full = (aviliable_now == `RS_OUT_OF_RANGE);
+    // wire is_full = (aviliable_now == `RS_OUT_OF_RANGE);
+    wire is_full = (element_num >= `RS_SIZE-`FULL_PRESERVE);
 
     wire[`ROB_ID_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_ID_RESET :Q1_from_dispatcher);
     wire[`ROB_ID_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_ID_RESET :Q2_from_dispatcher);
     wire[`DATA_TYPE ] V1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ? data_from_lsu:V1_from_dispatcher);
     wire[`DATA_TYPE ] V2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? result_from_alu:((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ? data_from_lsu:V2_from_dispatcher);
 
+    reg[`RS_TYPE ] element_num;
+    wire is_idel = !rst_in && !rollback_flag_from_rob && rdy_in;
+    wire insert_signal = is_idel && enable_from_dispatcher && (aviliable_now != `RS_OUT_OF_RANGE);
+    wire pop_signal = is_idel && exec_now != `RS_OUT_OF_RANGE;
 
     wire[`DATA_TYPE ] dbg_V1_1_now = V1[1];
     wire[`DATA_TYPE ] dbg_V2_1_now = V2[1];
     wire[`ROB_ID_TYPE ] dbg_Q1_1_now = Q1[1];
     wire[`ROB_ID_TYPE ] dbg_Q2_2_now = Q2[1];
+    reg dbg_insert_fail;
 
     assign aviliable_now = ~busy[0] ? 0 :
         (~busy[1] ? 1 :
@@ -107,6 +113,8 @@ module ReservationStation(
 
     assign is_full_to_dispatcher = is_full;
 
+    // assign is_full_to_dispatcher=dbg_full_warning;
+
     always @(posedge clk_in) begin
         if (rst_in || rollback_flag_from_rob) begin
             for (i = 0; i < `RS_SIZE;i = i+1) begin
@@ -119,9 +127,20 @@ module ReservationStation(
                 Q1[i] <= `ROB_ID_RESET;
                 Q2[i] <= `ROB_ID_RESET;
                 rob_id[i] <= `ROB_ID_RESET;
+
+                element_num <= 0;
             end
         end
         else if (rdy_in) begin
+
+            if (insert_signal && !pop_signal) begin
+                element_num <= element_num+1;
+            end
+            if (!insert_signal && pop_signal) begin
+                element_num <= element_num-1;
+            end
+
+
             // execute
             if (exec_now == `RS_OUT_OF_RANGE) begin
                 op_enum_to_alu <= `OP_ENUM_RESET;
@@ -147,6 +166,14 @@ module ReservationStation(
                 inst_pos[aviliable_now] <= inst_pos_from_dispatcher;
                 rob_id[aviliable_now] <= rob_id_from_dispatcher;
             end
+
+            if (enable_from_dispatcher && aviliable_now == `RS_OUT_OF_RANGE) begin
+                dbg_insert_fail <= `TRUE;
+            end else begin
+                dbg_insert_fail <= `FALSE;
+            end
+
+
             if (enable_from_alu) begin // data from alu
                 for (i = 0; i < `RS_SIZE;i = i+1) begin
                     if (Q1[i] == rob_id_from_rs) begin

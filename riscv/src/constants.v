@@ -36,6 +36,7 @@
 `define RS_TYPE 4:0
 `define RS_SIZE 16
 `define RS_OUT_OF_RANGE 5'h10
+// `define RS_FULL_WARNING 5'h0d
 
 // constants of load_store_buffer
 `define LSB_TYPE 4:0
