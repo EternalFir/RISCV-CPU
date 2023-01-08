@@ -58,7 +58,7 @@ module LoadStoreBuffer(
     reg[`ROB_TYPE ] element_num;
     wire full = element_num >= (`LSB_SIZE -`FULL_PRESERVE);
     wire insert_signal = enable_from_dispatcher;
-    wire issue_signal = !react_halt && busy[head] && Q1[head] == `ROB_ID_RESET && Q2[head] == `ROB_ID_RESET && !busy_from_lsu && (((V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) && op_enum[head] <= `OP_ENUM_LHU) || committed[head]);
+    wire issue_signal = !react_halt && busy[head] && Q1[head] == `ROB_ID_RESET && Q2[head] == `ROB_ID_RESET && !busy_from_lsu && (((V1[head]+imm[head] != `RAM_IO_PORT || head_io_rob_id_from_rob == rob_id[head]) && op_enum[head] <= `OP_ENUM_LHU) || (op_enum[head] >= `OP_ENUM_SB && committed[head]));
 
     wire[`ROB_ID_TYPE ] Q1_insert = (enable_from_alu && Q1_from_dispatcher == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q1_from_dispatcher == rob_id_from_lsb) ?`ROB_ID_RESET :Q1_from_dispatcher);
     wire[`ROB_ID_TYPE ] Q2_insert = (enable_from_alu && Q2_from_dispatcher == rob_id_from_rs) ? `ROB_ID_RESET :((enable_from_lsu && Q2_from_dispatcher == rob_id_from_lsb) ?`ROB_ID_RESET :Q2_from_dispatcher);

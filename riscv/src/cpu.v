@@ -281,7 +281,10 @@ module cpu(
         .data_to_lsu(data_from_memcont_to_lsu),
 
         // broad cast to fetcher and lsu
-        .aviliable(aviliable_from_memcont)
+        .aviliable(aviliable_from_memcont),
+
+        // io buffer full signal
+        .io_buffer_full(io_buffer_full)
     );
 
     Fetcher fetcher(

@@ -31,7 +31,10 @@ module MemoryControl(
     output reg[`DATA_TYPE ] data_to_lsu,
 
     // broadcast to fetcher and lsu
-    output reg aviliable
+    output reg aviliable,
+
+    // io_buffer_full_signal_from_outside
+    input wire io_buffer_full
 );
 
     reg[2:0] rw_block_ram;
@@ -116,53 +119,67 @@ module MemoryControl(
                 end
             end
             if (is_with_lsu) begin
-                if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
-                    // read_write_flag_to_ram <= `READ_SIT;
-                    case (rw_block_ram)
-                        3'h1: data_to_lsu[7:0] <= data_from_ram;
-                        3'h2: data_to_lsu[15:8] <= data_from_ram;
-                        3'h3: data_to_lsu[23:16] <= data_from_ram;
-                        3'h4: data_to_lsu[31:24] <= data_from_ram;
-                    endcase
-                    rw_block_ram <= rw_block_ram+1;
-                    address_to_ram <= address_to_ram+1;
-                    if (rw_block_ram == 4) begin
-                        end_to_lsu <= `TRUE;
-                        // aviliable <= `TRUE;
-                        is_with_lsu <= `FALSE;
-                    end
-                end
-                else begin // for write
-                    // read_write_flag_to_ram <= `WRITE_SIT;
-                    if (is_io_inst) begin
-                        data_to_ram <= data_from_lsu[7:0];
-                        address_to_ram <= address_to_ram;
-                    end else begin
+                if (is_io_inst && io_buffer_full) begin
+                    rw_block_ram<=rw_block_ram;
+                    address_to_ram<=address_to_ram;
+                    data_to_ram<=data_to_ram;
+                end else begin
+                    if (read_wirte_flag_from_lsu == `READ_SIT) begin // for read
+                        // read_write_flag_to_ram <= `READ_SIT;
                         case (rw_block_ram)
-                            3'h0: data_to_ram <= data_from_lsu[7:0];
-                            3'h1: data_to_ram <= data_from_lsu[15:8];
-                            3'h2: data_to_ram <= data_from_lsu[23:16];
-                            3'h3: data_to_ram <= data_from_lsu[31:24];
-                            3'h4: data_to_ram <= data_from_lsu[31:24];
-                            // 3'h1: data_to_ram <= data_from_lsu[7:0];
-                            // 3'h2: data_to_ram <= data_from_lsu[15:8];
-                            // 3'h3: data_to_ram <= data_from_lsu[23:16];
-                            // 3'h4: data_to_ram <= data_from_lsu[31:24];
+                            3'h1: data_to_lsu[7:0] <= data_from_ram;
+                            3'h2: data_to_lsu[15:8] <= data_from_ram;
+                            3'h3: data_to_lsu[23:16] <= data_from_ram;
+                            3'h4: data_to_lsu[31:24] <= data_from_ram;
                         endcase
-                        if (rw_block_ram > 0 && rw_block_ram < 4) begin
-                            address_to_ram <= address_to_ram+1;
+                        if (is_io_inst) begin
+                            address_to_ram<=`ADDR_RESET ;
                         end else begin
-                            address_to_ram <= address_to_ram;
+                            address_to_ram <= address_to_ram+1;
+                        end
+                        rw_block_ram <= rw_block_ram+1;
+
+                        if (rw_block_ram == 4) begin
+                            end_to_lsu <= `TRUE;
+                            // aviliable <= `TRUE;
+                            is_with_lsu <= `FALSE;
                         end
                     end
-                    rw_block_ram <= rw_block_ram+1;
-                    if (rw_block_ram == 4) begin
-                        end_to_lsu <= `TRUE;
-                        // aviliable <= `TRUE;
-                        is_with_lsu <= `FALSE;
-                        is_io_inst <= `FALSE;
+                    else begin // for write
+                        // read_write_flag_to_ram <= `WRITE_SIT;
+                        if (is_io_inst) begin
+                            // data_to_ram <= data_from_lsu[7:0];
+                            // address_to_ram <= address_to_ram;
+                            data_to_ram<=`DATA_RESET ;
+                            address_to_ram<=`ADDR_RESET ;
+                        end else begin
+                            case (rw_block_ram)
+                                3'h0: data_to_ram <= data_from_lsu[7:0];
+                                3'h1: data_to_ram <= data_from_lsu[15:8];
+                                3'h2: data_to_ram <= data_from_lsu[23:16];
+                                3'h3: data_to_ram <= data_from_lsu[31:24];
+                                3'h4: data_to_ram <= data_from_lsu[31:24];
+                                // 3'h1: data_to_ram <= data_from_lsu[7:0];
+                                // 3'h2: data_to_ram <= data_from_lsu[15:8];
+                                // 3'h3: data_to_ram <= data_from_lsu[23:16];
+                                // 3'h4: data_to_ram <= data_from_lsu[31:24];
+                            endcase
+                            if (rw_block_ram > 0 && rw_block_ram < 4) begin
+                                address_to_ram <= address_to_ram+1;
+                            end else begin
+                                address_to_ram <= address_to_ram;
+                            end
+                        end
+                        rw_block_ram <= rw_block_ram+1;
+                        if (rw_block_ram == 4) begin
+                            end_to_lsu <= `TRUE;
+                            // aviliable <= `TRUE;
+                            is_with_lsu <= `FALSE;
+                            is_io_inst <= `FALSE;
+                        end
                     end
                 end
+
             end
             // if (rw_end_ram && rw_block_ram > 3'h5) begin // first time
             //     rw_end_ram <= `FALSE;
