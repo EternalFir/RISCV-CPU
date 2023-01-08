@@ -128,11 +128,11 @@ module Register(
 
 
                 // if (commit_flag_from_cdb) begin
-                //     if (dbg_commit_cnt >= 32'h80 && dbg_commit_cnt <= 32'h100) begin
+                //     if (dbg_commit_cnt >= 32'h2800 && dbg_commit_cnt <= 32'h3000) begin
                 //         $display("commiting, commit_cnt = %h, pc = %h", dbg_commit_cnt, dbg_commit_pos_from_rob);
-                //         for (i = 0; i < `REG_SIZE;i = i+1) begin
-                //             $display("reg %h : %h", i, registers[i]);
-                //         end
+                //         // for (i = 0; i < `REG_SIZE;i = i+1) begin
+                //         //     $display("reg %h : %h", i, registers[i]);
+                //         // end
                 //     end
                 //     dbg_commit_cnt <= dbg_commit_cnt+1;
                 // end

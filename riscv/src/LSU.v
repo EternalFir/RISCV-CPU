@@ -35,6 +35,8 @@ module LSU(
     assign read_write_flag_to_memcont = read_write_falg_from_lsb;
     assign address_to_memcont = object_address_from_lsb;
 
+    reg rollback_load_interrupt; // we rollback flag positive while a load inst is executing, this inst should be thrown
+
     reg dbg_visited_object_ram;
     reg dbg_is_write;
 
@@ -45,6 +47,7 @@ module LSU(
             end_to_lsb <= `FALSE;
             busy_to_lsb <= `FALSE;
             enable_to_cdb <= `FALSE;
+            rollback_load_interrupt <= `FALSE;
 
 
             dbg_visited_object_ram <= `FALSE;
@@ -59,7 +62,11 @@ module LSU(
                 else
                     dbg_is_write <= `FALSE;
             end else begin
-                dbg_visited_object_ram<=`FALSE ;
+                dbg_visited_object_ram <= `FALSE;
+            end
+
+            if (rollback_flag_from_rob && busy_to_lsb && read_write_falg_from_lsb == `READ_SIT) begin
+                rollback_load_interrupt <= `TRUE;
             end
 
 
@@ -99,30 +106,50 @@ module LSU(
                 end_to_lsb <= `TRUE;
                 case (op_enum_from_lsb)
                     `OP_ENUM_LB : begin
-                    data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
-                    enable_to_cdb <= `TRUE;
-                    result_to_cdb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+                    if (rollback_load_interrupt) begin
+                        rollback_load_interrupt <= `FALSE;
+                    end else begin
+                        data_to_lsb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+                        enable_to_cdb <= `TRUE;
+                        result_to_cdb <= {{24{data_from_memcont[7]}}, data_from_memcont[7:0]};
+                    end
                 end
                 `OP_ENUM_LH: begin
-                    data_to_lsb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
-                    enable_to_cdb <= `TRUE;
-                    result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                    if (rollback_load_interrupt) begin
+                        rollback_load_interrupt <= `FALSE;
+                    end else begin
+                        data_to_lsb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                        enable_to_cdb <= `TRUE;
+                        result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                    end
                 end
                 `OP_ENUM_LW: begin
-                    data_to_lsb <= data_from_memcont;
-                    enable_to_cdb <= `TRUE;
-                    // result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
-                    result_to_cdb<=data_from_memcont;
+                    if (rollback_load_interrupt) begin
+                        rollback_load_interrupt<=`FALSE ;
+                    end else begin
+                        data_to_lsb <= data_from_memcont;
+                        enable_to_cdb <= `TRUE;
+                        // result_to_cdb <= {{16{data_from_memcont[15]}}, data_from_memcont[15:0]};
+                        result_to_cdb <= data_from_memcont;
+                    end
                 end
                 `OP_ENUM_LBU: begin
-                    data_to_lsb <= `DATA_RESET +{data_from_memcont[7:0]};
-                    enable_to_cdb <= `TRUE;
-                    result_to_cdb <= `DATA_RESET +{data_from_memcont[7:0]};
+                    if (rollback_load_interrupt) begin
+                        rollback_load_interrupt<=`FALSE ;
+                    end else begin
+                        data_to_lsb <= `DATA_RESET +{data_from_memcont[7:0]};
+                        enable_to_cdb <= `TRUE;
+                        result_to_cdb <= `DATA_RESET +{data_from_memcont[7:0]};
+                    end
                 end
                 `OP_ENUM_LHU: begin
-                    data_to_lsb <= `DATA_RESET +{data_from_memcont[15:0]};
-                    enable_to_cdb <= `TRUE;
-                    result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
+                    if (rollback_load_interrupt) begin
+                        rollback_load_interrupt<=`FALSE ;
+                    end else begin
+                        data_to_lsb <= `DATA_RESET +{data_from_memcont[15:0]};
+                        enable_to_cdb <= `TRUE;
+                        result_to_cdb <= `DATA_RESET +{data_from_memcont[15:0]};
+                    end
                 end
                 `OP_ENUM_SB: begin
                     enable_to_cdb <= `FALSE;

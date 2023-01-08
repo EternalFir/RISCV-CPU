@@ -61,6 +61,7 @@ module Decoder(
                 is_jump = `TRUE;
             end
             `OPCODE_LOAD: begin
+                is_load<=`TRUE ;
                 case (inst_in[`FUNC3_RANGE])
                     `FUNC3_LB: op_enum = `OP_ENUM_LB;
                     `FUNC3_LH: op_enum = `OP_ENUM_LH;
