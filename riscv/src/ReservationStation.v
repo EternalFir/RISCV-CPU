@@ -68,11 +68,11 @@ module ReservationStation(
     wire insert_signal = is_idel && enable_from_dispatcher && (aviliable_now != `RS_OUT_OF_RANGE);
     wire pop_signal = is_idel && exec_now != `RS_OUT_OF_RANGE;
 
-    wire[`DATA_TYPE ] dbg_V1_1_now = V1[1];
-    wire[`DATA_TYPE ] dbg_V2_1_now = V2[1];
-    wire[`ROB_ID_TYPE ] dbg_Q1_1_now = Q1[1];
-    wire[`ROB_ID_TYPE ] dbg_Q2_2_now = Q2[1];
-    reg dbg_insert_fail;
+    // wire[`DATA_TYPE ] dbg_V1_1_now = V1[1];
+    // wire[`DATA_TYPE ] dbg_V2_1_now = V2[1];
+    // wire[`ROB_ID_TYPE ] dbg_Q1_1_now = Q1[1];
+    // wire[`ROB_ID_TYPE ] dbg_Q2_2_now = Q2[1];
+    // reg dbg_insert_fail;
 
     assign aviliable_now = ~busy[0] ? 0 :
         (~busy[1] ? 1 :
@@ -167,11 +167,11 @@ module ReservationStation(
                 rob_id[aviliable_now] <= rob_id_from_dispatcher;
             end
 
-            if (enable_from_dispatcher && aviliable_now == `RS_OUT_OF_RANGE) begin
-                dbg_insert_fail <= `TRUE;
-            end else begin
-                dbg_insert_fail <= `FALSE;
-            end
+            // if (enable_from_dispatcher && aviliable_now == `RS_OUT_OF_RANGE) begin
+            //     dbg_insert_fail <= `TRUE;
+            // end else begin
+            //     dbg_insert_fail <= `FALSE;
+            // end
 
 
             if (enable_from_alu) begin // data from alu

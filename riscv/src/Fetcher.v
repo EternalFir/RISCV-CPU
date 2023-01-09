@@ -12,7 +12,7 @@ module Fetcher(
     output reg enable_to_memcont,
     // output reg start_to_memcont,
     output reg[`ADDR_TYPE ] address_to_memcont,
-    output reg reset_to_memcont,
+    // output reg reset_to_memcont,
 
     // connect with Predictor
     // input wire end_from_predictor,
@@ -79,12 +79,12 @@ module Fetcher(
     assign inst_to_predictor = target_inst_in_cache;
 
 
-    reg dbg_inst_load;
-    reg[3:0] dbg_run_time_test;
-    reg dbg_access_test_1;
-    reg [`ADDR_TYPE ]dbg_object_inst_pos = 32'h00001200;
-    wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_inst[dbg_object_inst_pos[10:2]]:`INST_RESET;
-    wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_pos[dbg_object_inst_pos[10:2]]:`ADDR_RESET;
+    // reg dbg_inst_load;
+    // reg[3:0] dbg_run_time_test;
+    // reg dbg_access_test_1;
+    // reg [`ADDR_TYPE ]dbg_object_inst_pos = 32'h00001200;
+    // wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_inst[dbg_object_inst_pos[10:2]]:`INST_RESET;
+    // wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_pos[dbg_object_inst_pos[10:2]]:`ADDR_RESET;
 
 
     always @(posedge clk_in) begin
@@ -118,15 +118,15 @@ module Fetcher(
             busy_with_memcont <= `FALSE;
             busy_with_dispatcher <= `FALSE;
             // single_inst_read_flag <= single_inst_read_end_flag <= `TRUE;
-            reset_to_memcont <= `FALSE;
+            // reset_to_memcont <= `FALSE;
             idle_to_dispatcher <= `FALSE;
             // inst_need_to_load_pos <= `ADDR_RESET;
             jalr_halt <= `FALSE;
 
 
-            dbg_inst_load <= `FALSE;
-            dbg_run_time_test <= 0;
-            dbg_access_test_1 <= `FALSE;
+            // dbg_inst_load <= `FALSE;
+            // dbg_run_time_test <= 0;
+            // dbg_access_test_1 <= `FALSE;
 
         end else if (rdy_in == `TRUE) begin
             // get 4 insts a group
@@ -160,7 +160,7 @@ module Fetcher(
                     busy_with_memcont <= `FALSE;
 
 
-                    dbg_run_time_test <= dbg_run_time_test+1;
+                    // dbg_run_time_test <= dbg_run_time_test+1;
 
                 end
             end

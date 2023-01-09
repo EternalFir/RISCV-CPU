@@ -86,7 +86,7 @@ module cpu(
     // connection between memory control and fetcher
     wire enable_from_fetcher_to_memcont;
     wire[`ADDR_TYPE ] address_from_fetcher_to_memcont;
-    wire reset_from_fetcher_to_memcont;
+    // wire reset_from_fetcher_to_memcont;
     wire end_from_memcont_to_fetcher;
     wire one_inst_finish_from_memcont_to_fetcher;
     wire[`INST_TYPE ] inst_from_memcont_to_fetcher;
@@ -189,7 +189,7 @@ module cpu(
     wire global_full = (is_full_from_rs_to_dispatcher || full_flag_from_lsb_to_dispatcher || full_from_rob_to_cdb);
 
     // dbg
-    wire [`ADDR_TYPE ]dbg_commit_pos_from_rob_to_register;
+    // wire [`ADDR_TYPE ]dbg_commit_pos_from_rob_to_register;
 // modules:
 
     ReorderBuffer reorderBuffer(
@@ -247,10 +247,10 @@ module cpu(
         // broadcast
         .rollback_flag(rollback_flag_from_rob_to_cdb),
         .commit_flag(commit_flag_from_rob_to_cdb),
-        .full_to_cdb(full_from_rob_to_cdb),
+        .full_to_cdb(full_from_rob_to_cdb)
 
         // dbg
-        .dbg_commit_pos_to_register(dbg_commit_pos_from_rob_to_register)
+        // .dbg_commit_pos_to_register(dbg_commit_pos_from_rob_to_register)
     );
 
     MemoryControl memoryControl(
@@ -267,7 +267,7 @@ module cpu(
         // connect with fetcher
         .enable_from_fetcher(enable_from_fetcher_to_memcont),
         .addrress_from_fetcher(address_from_fetcher_to_memcont),
-        .reset_from_fetcher(reset_from_fetcher_to_memcont),
+        // .reset_from_fetcher(reset_from_fetcher_to_memcont),
         .end_to_fetcher(end_from_memcont_to_fetcher),
         .one_inst_finish_to_fetcher(one_inst_finish_from_memcont_to_fetcher),
         .inst_to_fetcher(inst_from_memcont_to_fetcher),
@@ -299,7 +299,7 @@ module cpu(
         .aviliable_from_memcont(aviliable_from_memcont),
         .enable_to_memcont(enable_from_fetcher_to_memcont),
         .address_to_memcont(address_from_fetcher_to_memcont),
-        .reset_to_memcont(reset_from_fetcher_to_memcont),
+        // .reset_to_memcont(reset_from_fetcher_to_memcont),
 
         // connect with predictor
         .imm_from_predictor(imm_from_predictor_to_fetcher),
@@ -575,10 +575,10 @@ module cpu(
 
         // info from cdb
         .commit_flag_from_cdb(commit_flag_from_rob_to_cdb),
-        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb),
+        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb)
 
         // dbg
-        .dbg_commit_pos_from_rob(dbg_commit_pos_from_rob_to_register)
+        // .dbg_commit_pos_from_rob(dbg_commit_pos_from_rob_to_register)
     );
 
 endmodule

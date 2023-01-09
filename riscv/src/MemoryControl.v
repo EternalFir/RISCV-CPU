@@ -50,19 +50,19 @@ module MemoryControl(
     reg[`INST_CNT_TYPE ] inst_read_cnt;
     reg is_io_inst;
 
-    reg dbg_io_port_visited;
+    // reg dbg_io_port_visited;
 
 
-    always @(*) begin
-        if (reset_from_fetcher == `TRUE) begin
-            inst_read_cnt <= `INST_CNT_RESET;
-            inst_to_fetcher <= `INST_RESET;
-            end_to_fetcher <= `FALSE;
-            is_io_inst <= `FALSE;
-
-            dbg_io_port_visited <= `FALSE;
-        end
-    end
+    // always @(*) begin
+    //     if (reset_from_fetcher == `TRUE) begin
+    //         inst_read_cnt <= `INST_CNT_RESET;
+    //         inst_to_fetcher <= `INST_RESET;
+    //         end_to_fetcher <= `FALSE;
+    //         is_io_inst <= `FALSE;
+    //
+    //         dbg_io_port_visited <= `FALSE;
+    //     end
+    // end
 
     always @(posedge clk_in) begin
         if (rst_in == `TRUE) begin
@@ -85,7 +85,7 @@ module MemoryControl(
             is_io_inst <= `FALSE;
 
 
-            dbg_io_port_visited <= `FALSE;
+            // dbg_io_port_visited <= `FALSE;
         end
         else if (rdy_in) begin
             if (one_inst_going_to_finish) begin
@@ -99,7 +99,7 @@ module MemoryControl(
             address_to_ram <= `ADDR_RESET;
             data_to_ram <= `MEMPORT_RESET;
 
-            dbg_io_port_visited <= `FALSE;
+            // dbg_io_port_visited <= `FALSE;
 
             if (aviliable && enable_from_lsu) begin
                 aviliable <= `FALSE;
@@ -113,7 +113,7 @@ module MemoryControl(
 
 
                 if (address_from_lsu == `RAM_IO_PORT) begin
-                    dbg_io_port_visited <= `TRUE;
+                    // dbg_io_port_visited <= `TRUE;
                     is_io_inst <= `TRUE;
                     data_to_ram <= data_from_lsu[7:0];
                 end

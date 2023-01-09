@@ -37,8 +37,8 @@ module LSU(
 
     reg rollback_load_interrupt; // we rollback flag positive while a load inst is executing, this inst should be thrown
 
-    reg dbg_visited_object_ram;
-    reg dbg_is_write;
+    // reg dbg_visited_object_ram;
+    // reg dbg_is_write;
 
 
     always @(posedge clk_in) begin
@@ -50,20 +50,20 @@ module LSU(
             rollback_load_interrupt <= `FALSE;
 
 
-            dbg_visited_object_ram <= `FALSE;
-            dbg_is_write <= `FALSE;
+            // dbg_visited_object_ram <= `FALSE;
+            // dbg_is_write <= `FALSE;
         end
         else if (rdy_in) begin
 
-            if (object_address_from_lsb == 32'h00001264) begin
-                dbg_visited_object_ram <= `TRUE;
-                if (read_write_falg_from_lsb == `WRITE_SIT)
-                    dbg_is_write <= `TRUE;
-                else
-                    dbg_is_write <= `FALSE;
-            end else begin
-                dbg_visited_object_ram <= `FALSE;
-            end
+            // if (object_address_from_lsb == 32'h00001264) begin
+            //     dbg_visited_object_ram <= `TRUE;
+            //     if (read_write_falg_from_lsb == `WRITE_SIT)
+            //         dbg_is_write <= `TRUE;
+            //     else
+            //         dbg_is_write <= `FALSE;
+            // end else begin
+            //     dbg_visited_object_ram <= `FALSE;
+            // end
 
             if (rollback_flag_from_rob && busy_to_lsb && read_write_falg_from_lsb == `READ_SIT) begin
                 rollback_load_interrupt <= `TRUE;

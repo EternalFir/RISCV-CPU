@@ -25,10 +25,10 @@ module Register(
 
     // info from cdb
     input wire commit_flag_from_cdb,
-    input wire rollback_flag_from_cdb,
+    input wire rollback_flag_from_cdb
 
     // dbg
-    input wire[`ADDR_TYPE ] dbg_commit_pos_from_rob
+    // input wire[`ADDR_TYPE ] dbg_commit_pos_from_rob
 );
     integer i;
 
@@ -50,9 +50,9 @@ module Register(
     assign Q2_to_dispatcher = ((enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET && rs2_from_dispatcher == reg_id_from_dispatcher) ? rob_id_from_dispatcher:(rd_from_rob_backup == rs2_from_dispatcher && rob_free) ?`ROB_ID_RESET :(reg_id_from_dispatcher_backup == rs2_from_dispatcher ? rob_id_from_dispatcher_backup : (rollback_flag_from_cdb_backup ?`ROB_ID_RESET : rob_register[rs2_from_dispatcher])));
 
 
-    reg[`DATA_TYPE ] dbg_commit_cnt;
+    // reg[`DATA_TYPE ] dbg_commit_cnt;
 
-    wire [`ROB_ID_TYPE ] dbg_rob_register_0A=rob_register[5'h0a];
+    // wire [`ROB_ID_TYPE ] dbg_rob_register_0A=rob_register[5'h0a];
 
 
     always @(*) begin
@@ -106,7 +106,7 @@ module Register(
             end
 
 
-            dbg_commit_cnt <= `DATA_RESET;
+            // dbg_commit_cnt <= `DATA_RESET;
         end
         else begin
             if (rdy_in) begin
