@@ -143,15 +143,16 @@ module MemoryControl(
                             end_to_lsu <= `TRUE;
                             // aviliable <= `TRUE;
                             is_with_lsu <= `FALSE;
+                            address_to_ram<=`ADDR_RESET ;
                         end
                     end
                     else begin // for write
                         // read_write_flag_to_ram <= `WRITE_SIT;
                         if (is_io_inst) begin
-                            // data_to_ram <= data_from_lsu[7:0];
-                            // address_to_ram <= address_to_ram;
-                            data_to_ram<=`DATA_RESET ;
-                            address_to_ram<=`ADDR_RESET ;
+                            data_to_ram <= data_from_lsu[7:0];
+                            address_to_ram <= address_to_ram;
+                            // data_to_ram<=`DATA_RESET ;
+                            // address_to_ram<=`ADDR_RESET ;
                         end else begin
                             case (rw_block_ram)
                                 3'h0: data_to_ram <= data_from_lsu[7:0];

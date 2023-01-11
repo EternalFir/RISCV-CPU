@@ -58,6 +58,8 @@ module Register(
     always @(*) begin
         if (rollback_flag_from_cdb) begin
             rollback_flag_from_cdb_backup = rollback_flag_from_cdb;
+            reg_id_from_dispatcher_backup<=`REG_RESET ;
+            rob_id_from_dispatcher_backup<=`ROB_ID_RESET ;
         end else begin
             rollback_flag_from_cdb_backup = `FALSE;
             if (enable_from_dispatcher && reg_id_from_dispatcher != `REG_RESET) begin
@@ -88,18 +90,22 @@ module Register(
                 rd_from_rob_backup = `REG_RESET;
                 V_from_rob_backup = `DATA_RESET;
             end
+        end else begin
+            rob_free<=`FALSE ;
+            rd_from_rob_backup= `REG_RESET ;
+            V_from_rob_backup=`DATA_RESET ;
         end
 
     end
 
     always @(posedge clk_in) begin
         if (rst_in) begin
-            rollback_flag_from_cdb_backup <= `FALSE;
-            rob_free <= `FALSE;
-            rob_id_from_dispatcher_backup <= `ROB_ID_RESET;
-            reg_id_from_dispatcher_backup <= `REG_RESET;
-            rd_from_rob_backup <= `REG_RESET;
-            V_from_rob_backup <= `DATA_RESET;
+            // rollback_flag_from_cdb_backup <= `FALSE;
+            // rob_free <= `FALSE;
+            // rob_id_from_dispatcher_backup <= `ROB_ID_RESET;
+            // reg_id_from_dispatcher_backup <= `REG_RESET;
+            // rd_from_rob_backup <= `REG_RESET;
+            // V_from_rob_backup <= `DATA_RESET;
             for (i = 0; i < `REG_SIZE;i = i+1) begin
                 registers[i] <= `REG_RESET;
                 rob_register[i] <= `ROB_ID_RESET;
@@ -122,8 +128,8 @@ module Register(
                     if (rob_free) begin
                         rob_register[rd_from_rob_backup] <= `ROB_ID_RESET;
                     end
-                    rd_from_rob_backup<=`REG_RESET ;
-                    V_from_rob_backup<=`DATA_RESET ;
+                    // rd_from_rob_backup<=`REG_RESET ;
+                    // V_from_rob_backup<=`DATA_RESET ;
                 end
 
 

@@ -46,7 +46,7 @@ module Fetcher(
     reg icache_vailed[`ICACHE_SIZE -1:0];
     reg[`INST_TYPE ] icache_inst[`ICACHE_SIZE-1:0];
     reg[`ADDR_TYPE ] icache_pos[`ICACHE_SIZE-1:0];
-    reg[`ICACHE_TYPE ] icache_num;
+    // reg[`ICACHE_TYPE ] icache_num;
     reg[`INST_CNT_TYPE ] icache_get_cnt;
     reg[`INST_TYPE ] inst_queue[`IQUEUE_SIZE_-1:0];
     reg[`ADDR_TYPE ] inst_pos_queue[`IQUEUE_SIZE_-1:0];
@@ -70,9 +70,9 @@ module Fetcher(
 
     integer i;
 
-    wire need_inst_load = !(icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
-    wire hit = (icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
-    wire[`INST_TYPE ] target_inst_in_cache = (hit) ? icache_inst[pc_pos_now[10:2]]:`ADDR_RESET;
+    wire need_inst_load = !(icache_vailed[pc_pos_now[9:2]] && icache_pos[pc_pos_now[9:2]] == pc_pos_now);
+    wire hit = (icache_vailed[pc_pos_now[9:2]] && icache_pos[pc_pos_now[9:2]] == pc_pos_now);
+    wire[`INST_TYPE ] target_inst_in_cache = (hit) ? icache_inst[pc_pos_now[9:2]]:`ADDR_RESET;
     // reg[`ADDR_TYPE ] inst_need_to_load_pos;
 
     assign pc_to_predictor = pc_pos_now;
@@ -83,8 +83,8 @@ module Fetcher(
     // reg[3:0] dbg_run_time_test;
     // reg dbg_access_test_1;
     // reg [`ADDR_TYPE ]dbg_object_inst_pos = 32'h00001200;
-    // wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_inst[dbg_object_inst_pos[10:2]]:`INST_RESET;
-    // wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_pos[dbg_object_inst_pos[10:2]]:`ADDR_RESET;
+    // wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[9:2]]) ? icache_inst[dbg_object_inst_pos[9:2]]:`INST_RESET;
+    // wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[9:2]]) ? icache_pos[dbg_object_inst_pos[9:2]]:`ADDR_RESET;
 
 
     always @(posedge clk_in) begin
@@ -93,7 +93,7 @@ module Fetcher(
             address_to_memcont <= `ADDR_RESET;
             // need_inst_load <= `FALSE;
             pc_load_start <= `ADDR_RESET;
-            icache_num <= 0;
+            // icache_num <= 0;
             for (i = 0; i < `ICACHE_SIZE;i = i+1) begin
                 icache_inst[i] <= `INST_RESET;
                 icache_pos[i] <= `ADDR_RESET;
@@ -144,16 +144,16 @@ module Fetcher(
                 if (!end_from_memcont) begin
                     if (one_inst_finish_from_momcont) begin
                         // 使用指令对应的实际地址值进行 hash ，以避免后读入的指令覆盖了前面的
-                        icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
-                        icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
-                        icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
+                        icache_inst[temp_inst_pos[9:2]] <= inst_from_memcont;
+                        icache_pos[temp_inst_pos[9:2]] <= pc_load_start+icache_get_cnt*4;
+                        icache_vailed[temp_inst_pos[9:2]] <= `TRUE;
                         icache_get_cnt <= icache_get_cnt+1;
                         temp_inst <= inst_from_memcont;
                     end
                 end else begin
-                    icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
-                    icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
-                    icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
+                    icache_inst[temp_inst_pos[9:2]] <= inst_from_memcont;
+                    icache_pos[temp_inst_pos[9:2]] <= pc_load_start+icache_get_cnt*4;
+                    icache_vailed[temp_inst_pos[9:2]] <= `TRUE;
                     icache_get_cnt <= icache_get_cnt+1;
                     temp_inst <= inst_from_memcont;
                     enable_to_memcont <= `FALSE;
@@ -195,8 +195,8 @@ module Fetcher(
 
                 // into iqueue
                 if (insert_signal) begin
-                    inst_queue[tail] <= icache_inst[pc_pos_now[10:2]];
-                    inst_pos_queue[tail] <= icache_pos[pc_pos_now[10:2]];
+                    inst_queue[tail] <= icache_inst[pc_pos_now[9:2]];
+                    inst_pos_queue[tail] <= icache_pos[pc_pos_now[9:2]];
                     inst_jump_predict_queue[tail] <= jump_predict_flag_from_predictor;
                     inst_rollback_pos_queue[tail] <= pc_pos_now+4;
                     tail <= (tail == (`IQUEUE_SIZE_ -1)) ? 0:tail+1;
@@ -213,8 +213,8 @@ module Fetcher(
                 // // into iqueue
                 // if (inst_queue_num <= 3'h4 && ~jalr_halt) begin
                 //     if (hit) begin // hit
-                //         inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[10:2]];
-                //         inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[10:2]];
+                //         inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[9:2]];
+                //         inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[9:2]];
                 //         inst_jump_predict_queue[inst_queue_num] <= jump_predict_flag_from_predictor;
                 //         inst_rollback_pos_queue[inst_queue_num] <= pc_pos_now+4;
                 //         inst_queue_num <= inst_queue_num+1;
