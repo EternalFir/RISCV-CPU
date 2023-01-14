@@ -15,7 +15,7 @@
 `define RAM_IO_PORT 32'h30000
 
 // constants of fetcher
-`define ICACHE_SIZE 256
+`define ICACHE_SIZE 512
 // `define ICACHE_TYPE 12:0
 `define IQUEUE_SIZE_ 8 // rz 插件貌似不支持某些名称
 
@@ -61,7 +61,7 @@
 `define INST_QUEUE_RESET 3'h0
 
 // constants of predictor
-`define PREDICTOR_SIZE 256
+`define PREDICTOR_SIZE 512
 
 // constants of op_code_range
 `define OPCODE_RANGE 6:0

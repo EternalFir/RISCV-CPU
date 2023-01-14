@@ -50,7 +50,7 @@ module MemoryControl(
     reg[`INST_CNT_TYPE ] inst_read_cnt;
     reg is_io_inst;
 
-    // reg dbg_io_port_visited;
+    reg dbg_io_port_visited;
 
 
     // always @(*) begin

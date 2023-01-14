@@ -189,7 +189,7 @@ module cpu(
     wire global_full = (is_full_from_rs_to_dispatcher || full_flag_from_lsb_to_dispatcher || full_from_rob_to_cdb);
 
     // dbg
-    // wire [`ADDR_TYPE ]dbg_commit_pos_from_rob_to_register;
+    wire [`ADDR_TYPE ]dbg_commit_pos_from_rob_to_register;
 // modules:
 
     ReorderBuffer reorderBuffer(
@@ -247,10 +247,10 @@ module cpu(
         // broadcast
         .rollback_flag(rollback_flag_from_rob_to_cdb),
         .commit_flag(commit_flag_from_rob_to_cdb),
-        .full_to_cdb(full_from_rob_to_cdb)
+        .full_to_cdb(full_from_rob_to_cdb),
 
         // dbg
-        // .dbg_commit_pos_to_register(dbg_commit_pos_from_rob_to_register)
+        .dbg_commit_pos_to_register(dbg_commit_pos_from_rob_to_register)
     );
 
     MemoryControl memoryControl(
@@ -575,10 +575,10 @@ module cpu(
 
         // info from cdb
         .commit_flag_from_cdb(commit_flag_from_rob_to_cdb),
-        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb)
+        .rollback_flag_from_cdb(rollback_flag_from_rob_to_cdb),
 
         // dbg
-        // .dbg_commit_pos_from_rob(dbg_commit_pos_from_rob_to_register)
+        .dbg_commit_pos_from_rob(dbg_commit_pos_from_rob_to_register)
     );
 
 endmodule

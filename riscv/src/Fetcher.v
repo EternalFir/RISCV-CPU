@@ -70,21 +70,23 @@ module Fetcher(
 
     integer i;
 
-    wire need_inst_load = !(icache_vailed[pc_pos_now[9:2]] && icache_pos[pc_pos_now[9:2]] == pc_pos_now);
-    wire hit = (icache_vailed[pc_pos_now[9:2]] && icache_pos[pc_pos_now[9:2]] == pc_pos_now);
-    wire[`INST_TYPE ] target_inst_in_cache = (hit) ? icache_inst[pc_pos_now[9:2]]:`ADDR_RESET;
+    wire need_inst_load = !(icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
+    wire hit = (icache_vailed[pc_pos_now[10:2]] && icache_pos[pc_pos_now[10:2]] == pc_pos_now);
+    wire[`INST_TYPE ] target_inst_in_cache = (hit) ? icache_inst[pc_pos_now[10:2]]:`ADDR_RESET;
     // reg[`ADDR_TYPE ] inst_need_to_load_pos;
 
     assign pc_to_predictor = pc_pos_now;
     assign inst_to_predictor = target_inst_in_cache;
 
 
-    // reg dbg_inst_load;
-    // reg[3:0] dbg_run_time_test;
-    // reg dbg_access_test_1;
-    // reg [`ADDR_TYPE ]dbg_object_inst_pos = 32'h00001200;
-    // wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[9:2]]) ? icache_inst[dbg_object_inst_pos[9:2]]:`INST_RESET;
-    // wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[9:2]]) ? icache_pos[dbg_object_inst_pos[9:2]]:`ADDR_RESET;
+    reg dbg_inst_load;
+    reg[3:0] dbg_run_time_test;
+    reg dbg_access_test_1;
+    reg[`ADDR_TYPE ] dbg_object_inst_pos = 32'h00001200;
+    wire[`INST_TYPE ] dbg_object_inst_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_inst[dbg_object_inst_pos[10:2]]:`INST_RESET;
+    wire[`ADDR_TYPE ] dbg_object_inst_pos_in_cache = (icache_vailed[dbg_object_inst_pos[10:2]]) ? icache_pos[dbg_object_inst_pos[10:2]]:`ADDR_RESET;
+    reg[32:0] dbg_predict_cnt;
+    reg[32:0] dbg_rollback_cnt;
 
 
     always @(posedge clk_in) begin
@@ -124,9 +126,12 @@ module Fetcher(
             jalr_halt <= `FALSE;
 
 
-            // dbg_inst_load <= `FALSE;
-            // dbg_run_time_test <= 0;
-            // dbg_access_test_1 <= `FALSE;
+            dbg_inst_load <= `FALSE;
+            dbg_run_time_test <= 0;
+            dbg_access_test_1 <= `FALSE;
+
+            dbg_predict_cnt <= `DATA_RESET;
+            dbg_rollback_cnt <= `DATA_RESET;
 
         end else if (rdy_in == `TRUE) begin
             // get 4 insts a group
@@ -144,23 +149,23 @@ module Fetcher(
                 if (!end_from_memcont) begin
                     if (one_inst_finish_from_momcont) begin
                         // 使用指令对应的实际地址值进行 hash ，以避免后读入的指令覆盖了前面的
-                        icache_inst[temp_inst_pos[9:2]] <= inst_from_memcont;
-                        icache_pos[temp_inst_pos[9:2]] <= pc_load_start+icache_get_cnt*4;
-                        icache_vailed[temp_inst_pos[9:2]] <= `TRUE;
+                        icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
+                        icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
+                        icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
                         icache_get_cnt <= icache_get_cnt+1;
                         temp_inst <= inst_from_memcont;
                     end
                 end else begin
-                    icache_inst[temp_inst_pos[9:2]] <= inst_from_memcont;
-                    icache_pos[temp_inst_pos[9:2]] <= pc_load_start+icache_get_cnt*4;
-                    icache_vailed[temp_inst_pos[9:2]] <= `TRUE;
+                    icache_inst[temp_inst_pos[10:2]] <= inst_from_memcont;
+                    icache_pos[temp_inst_pos[10:2]] <= pc_load_start+icache_get_cnt*4;
+                    icache_vailed[temp_inst_pos[10:2]] <= `TRUE;
                     icache_get_cnt <= icache_get_cnt+1;
                     temp_inst <= inst_from_memcont;
                     enable_to_memcont <= `FALSE;
                     busy_with_memcont <= `FALSE;
 
 
-                    // dbg_run_time_test <= dbg_run_time_test+1;
+                    dbg_run_time_test <= dbg_run_time_test+1;
 
                 end
             end
@@ -179,6 +184,7 @@ module Fetcher(
                 jalr_halt <= `FALSE;
                 idle_to_dispatcher <= `FALSE;
 
+                dbg_rollback_cnt <= dbg_rollback_cnt+1;
             end
             else begin
 
@@ -195,8 +201,8 @@ module Fetcher(
 
                 // into iqueue
                 if (insert_signal) begin
-                    inst_queue[tail] <= icache_inst[pc_pos_now[9:2]];
-                    inst_pos_queue[tail] <= icache_pos[pc_pos_now[9:2]];
+                    inst_queue[tail] <= icache_inst[pc_pos_now[10:2]];
+                    inst_pos_queue[tail] <= icache_pos[pc_pos_now[10:2]];
                     inst_jump_predict_queue[tail] <= jump_predict_flag_from_predictor;
                     inst_rollback_pos_queue[tail] <= pc_pos_now+4;
                     tail <= (tail == (`IQUEUE_SIZE_ -1)) ? 0:tail+1;
@@ -208,13 +214,18 @@ module Fetcher(
                     if (is_jalr_inst_from_predictor) begin
                         jalr_halt <= `TRUE;
                     end
+
+
+                    if (target_inst_in_cache[`OPCODE_RANGE ] == `OPCODE_BRANCH)
+                        dbg_predict_cnt <= dbg_predict_cnt+1;
+
                 end
 
                 // // into iqueue
                 // if (inst_queue_num <= 3'h4 && ~jalr_halt) begin
                 //     if (hit) begin // hit
-                //         inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[9:2]];
-                //         inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[9:2]];
+                //         inst_queue[inst_queue_num] <= icache_inst[pc_pos_now[10:2]];
+                //         inst_pos_queue[inst_queue_num] <= icache_pos[pc_pos_now[10:2]];
                 //         inst_jump_predict_queue[inst_queue_num] <= jump_predict_flag_from_predictor;
                 //         inst_rollback_pos_queue[inst_queue_num] <= pc_pos_now+4;
                 //         inst_queue_num <= inst_queue_num+1;
@@ -276,6 +287,10 @@ module Fetcher(
                 //     rollback_pos_to_dispatcher <= `ADDR_RESET;
                 // end
             end
+
+            // if(dbg_predict_cnt>=32'hbf613)begin
+            //     $display("predict_cnt: %d , rollback_cnt: %d ", dbg_predict_cnt, dbg_rollback_cnt);
+            // end
 
         end
         else begin

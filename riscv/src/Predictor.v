@@ -28,7 +28,7 @@ module Predictor(
     wire[`DATA_TYPE] jal_imm = {{12{inst_from_fetcher[31]}}, inst_from_fetcher[19:12], inst_from_fetcher[20], inst_from_fetcher[30:21], 1'b0};
 
     assign jump_predict_flag_to_fetcher = (inst_from_fetcher[`OPCODE_RANGE ] == `OPCODE_JAL) ? `TRUE :
-        ((inst_from_fetcher[`OPCODE_RANGE ] == `OPCODE_BRANCH) ? local_history[pc_from_fetcher[7:0]] [1]:`FALSE);
+        ((inst_from_fetcher[`OPCODE_RANGE ] == `OPCODE_BRANCH) ? local_history[pc_from_fetcher[8:0]] [1]:`FALSE);
 
     assign imm_to_fetcher = (inst_from_fetcher[`OPCODE_RANGE ] == `OPCODE_JAL) ? jal_imm:branch_imm;
 
@@ -44,12 +44,12 @@ module Predictor(
         end else if (rdy_in) begin
             if (enable_from_reorderbuffer) begin
                 if (jump_result_from_reorderbuffer) begin
-                    if (local_history[inst_addr_from_reorderbuffer[7:0]] < 3) begin
-                        local_history[inst_addr_from_reorderbuffer[7:0]] <= local_history[inst_addr_from_reorderbuffer[7:0]]+1;
+                    if (local_history[inst_addr_from_reorderbuffer[8:0]] < 3) begin
+                        local_history[inst_addr_from_reorderbuffer[8:0]] <= local_history[inst_addr_from_reorderbuffer[8:0]]+1;
                     end
                 end else begin
-                    if (local_history[inst_addr_from_reorderbuffer[7:0]] > 0) begin
-                        local_history[inst_addr_from_reorderbuffer[7:0]] <= local_history[inst_addr_from_reorderbuffer[7:0]]-1;
+                    if (local_history[inst_addr_from_reorderbuffer[8:0]] > 0) begin
+                        local_history[inst_addr_from_reorderbuffer[8:0]] <= local_history[inst_addr_from_reorderbuffer[8:0]]-1;
                     end
                 end
             end

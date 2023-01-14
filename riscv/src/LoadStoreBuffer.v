@@ -72,15 +72,15 @@ module LoadStoreBuffer(
 
     reg react_halt; // 避免一次向lsu连续发送两条指令
 
-    // reg dbg_inserted;
-    // reg dbg_executed;
-    // wire dbg_busy_head = busy[head];
-    // wire[`OP_ENUM_TYPE ] dbg_op_enum_head = op_enum[head];
-    // wire[`ROB_ID_TYPE ] dbg_Q1_head = Q1[head];
-    // wire[`ROB_ID_TYPE ] dbg_Q2_head = Q2[head];
-    // wire[`ROB_ID_TYPE ] dbg_rob_id_head = rob_id[head];
-    // wire[`ADDR_TYPE ] dbg_head_addr = V1[head]+imm[head];
-    // wire[`ROB_ID_TYPE ] dbg_commit_tail_rob_id = rob_id[commit_store_tail];
+    reg dbg_inserted;
+    reg dbg_executed;
+    wire dbg_busy_head = busy[head];
+    wire[`OP_ENUM_TYPE ] dbg_op_enum_head = op_enum[head];
+    wire[`ROB_ID_TYPE ] dbg_Q1_head = Q1[head];
+    wire[`ROB_ID_TYPE ] dbg_Q2_head = Q2[head];
+    wire[`ROB_ID_TYPE ] dbg_rob_id_head = rob_id[head];
+    wire[`ADDR_TYPE ] dbg_head_addr = V1[head]+imm[head];
+    wire[`ROB_ID_TYPE ] dbg_commit_tail_rob_id = rob_id[commit_store_tail];
 
 
     always @(posedge clk_in) begin
@@ -103,8 +103,8 @@ module LoadStoreBuffer(
             end
             react_halt <= `FALSE;
 
-            // dbg_inserted <= `FALSE;
-            // dbg_executed <= `FALSE;
+            dbg_inserted <= `FALSE;
+            dbg_executed <= `FALSE;
 
         end
         else if (~rdy_in) begin
@@ -148,7 +148,7 @@ module LoadStoreBuffer(
                             head <= (head == `LSB_SIZE-1) ? 0:head+1;
                             react_halt <= `TRUE;
 
-                            // dbg_executed <= `TRUE;
+                            dbg_executed <= `TRUE;
                         end
                     end else if (op_enum[head] >= `OP_ENUM_SB && op_enum[head] <= `OP_ENUM_SW && committed[head]) begin // store
                         enable_to_lsu <= `TRUE;
@@ -166,19 +166,19 @@ module LoadStoreBuffer(
                         end
                         react_halt <= `TRUE;
 
-                        // dbg_executed <= `TRUE;
+                        dbg_executed <= `TRUE;
                     end else begin
                         enable_to_lsu <= `FALSE;
 
 
-                        // dbg_executed <= `FALSE;
+                        dbg_executed <= `FALSE;
                     end
                 end
                 else begin
                     enable_to_lsu <= `FALSE;
 
 
-                    // dbg_executed <= `FALSE;
+                    dbg_executed <= `FALSE;
                 end
                 // react to store inst commit
                 if (commit_flag_from_rob) begin
@@ -231,11 +231,10 @@ module LoadStoreBuffer(
                     tail <= (tail == `LSB_SIZE-1) ? 0:tail+1;
 
 
-                    // dbg_inserted <= `TRUE;
+                    dbg_inserted <= `TRUE;
                 end
                 else begin
-
-                    // dbg_inserted <= `FALSE;
+                    dbg_inserted <= `FALSE;
                 end
             end
         end

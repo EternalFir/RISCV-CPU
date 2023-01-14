@@ -60,10 +60,10 @@ module ReorderBuffer(
     // broadcast 
     output reg rollback_flag,
     output reg commit_flag,
-    output wire full_to_cdb
+    output wire full_to_cdb,
 
     // dbg
-    // output reg[`ADDR_TYPE ] dbg_commit_pos_to_register
+    output reg[`ADDR_TYPE ] dbg_commit_pos_to_register
 
 );
 
@@ -104,14 +104,14 @@ module ReorderBuffer(
     assign Q1_data_to_dispatcher = (Q1_from_dispatcher == `ROB_ID_RESET) ? `DATA_RESET :data[Q1_from_dispatcher-1];
     assign Q2_data_to_dispatcher = (Q2_from_dispatcher == `ROB_ID_RESET) ? `DATA_RESET :data[Q2_from_dispatcher-1];
 
-    // reg[`ADDR_TYPE ] dbg_commit_inst_pos;
-    // reg[`DATA_TYPE ] dbg_commit_count = 1;
-    // reg[`ROB_ID_TYPE ] dbg_rob_ready_now;
-    // reg[`ROB_ID_TYPE ] dbg_rob_rdy_now_2;
-    // reg dbg_commit_1f_true;
-    // reg dbg_commit_1f_false;
-    // wire dbg_busy_1f = busy[5'h1f];
-    // wire dbg_0d_ready = is_ready[5'h0d];
+    reg[`ADDR_TYPE ] dbg_commit_inst_pos;
+    reg[`DATA_TYPE ] dbg_commit_count = 1;
+    reg[`ROB_ID_TYPE ] dbg_rob_ready_now;
+    reg[`ROB_ID_TYPE ] dbg_rob_rdy_now_2;
+    reg dbg_commit_1f_true;
+    reg dbg_commit_1f_false;
+    wire dbg_busy_1f = busy[5'h1f];
+    wire dbg_0d_ready = is_ready[5'h0d];
 
 
     always @(posedge clk_in) begin
@@ -141,12 +141,12 @@ module ReorderBuffer(
             target_pc_pos_to_fetcher <= `ADDR_RESET;
 
 
-            // dbg_commit_inst_pos <= `ADDR_RESET;
-            // dbg_commit_pos_to_register <= `ADDR_RESET;
-            // dbg_rob_ready_now <= `ROB_ID_RESET;
-            // dbg_rob_rdy_now_2 <= `ROB_ID_RESET;
-            // dbg_commit_1f_true <= `FALSE;
-            // dbg_commit_1f_false <= `FALSE;
+            dbg_commit_inst_pos <= `ADDR_RESET;
+            dbg_commit_pos_to_register <= `ADDR_RESET;
+            dbg_rob_ready_now <= `ROB_ID_RESET;
+            dbg_rob_rdy_now_2 <= `ROB_ID_RESET;
+            dbg_commit_1f_true <= `FALSE;
+            dbg_commit_1f_false <= `FALSE;
             // dbg_commit_count <= `DATA_RESET;
         end else if (rdy_in) begin
             // calcu the element number
@@ -166,22 +166,22 @@ module ReorderBuffer(
                 if_jump_result[rob_id_rs_1] <= jump_flag_from_alu;
 
 
-                // dbg_rob_ready_now <= rob_id_from_rs-1;
-                // dbg_rob_rdy_now_2 <= (rob_id_from_rs == 6'h00) ? 6'h1f:rob_id_from_rs-1;
-                //
-                // if (rob_id_from_rs == 6'h00) begin
-                //     dbg_commit_1f_true <= `TRUE;
-                // end else begin
-                //     dbg_commit_1f_true <= `FALSE;
-                // end
+                dbg_rob_ready_now <= rob_id_from_rs-1;
+                dbg_rob_rdy_now_2 <= (rob_id_from_rs == 6'h00) ? 6'h1f:rob_id_from_rs-1;
+
+                if (rob_id_from_rs == 6'h00) begin
+                    dbg_commit_1f_true <= `TRUE;
+                end else begin
+                    dbg_commit_1f_true <= `FALSE;
+                end
             end else begin
                 // dbg_commit_1f <= `FALSE;
-                // dbg_rob_ready_now <= rob_id_from_rs-1;
-                // if (rob_id_from_rs == 6'h00) begin
-                //     dbg_commit_1f_false <= `TRUE;
-                // end else begin
-                //     dbg_commit_1f_false <= `FALSE;
-                // end
+                dbg_rob_ready_now <= rob_id_from_rs-1;
+                if (rob_id_from_rs == 6'h00) begin
+                    dbg_commit_1f_false <= `TRUE;
+                end else begin
+                    dbg_commit_1f_false <= `FALSE;
+                end
 
             end
 
@@ -218,7 +218,7 @@ module ReorderBuffer(
                 data[rob_id_lsb_1] <= result_from_lsu;
 
 
-                // dbg_rob_ready_now <= rob_id_from_lsb-1;
+                dbg_rob_ready_now <= rob_id_from_lsb-1;
             end
             // if (busy[rob_id_from_lsb-1] && enable_from_lsu) begin
             //     is_ready[rob_id_from_lsb-1] <= `TRUE;
@@ -255,10 +255,13 @@ module ReorderBuffer(
                 head <= ((head == `ROB_SIZE-1) ? 0:head+1);
 
 
-                // dbg_commit_pos_to_register <= inst_pos[head];
+                dbg_commit_pos_to_register <= inst_pos[head];
+                // if(dbg_commit_count<=32'h70)begin
+                //     $display("commiting, commit_cnt = %h, pc = %h",dbg_commit_count, inst_pos[head]);
+                // end
 
-                // dbg_commit_inst_pos <= inst_pos[head];
-                // dbg_commit_count <= dbg_commit_count+1;
+                dbg_commit_inst_pos <= inst_pos[head];
+                dbg_commit_count <= dbg_commit_count+1;
 
                 if (is_jump_inst[head]) begin
                     enable_to_predictor <= `TRUE;
